@@ -42,15 +42,16 @@ public class AuthController : ControllerBase
         try
         {
             var result = await _authService.LoginAsync(loginDto);
-            return Ok(ApiResponse<string>.Success(result.Token, result.Message, "LOGIN_SUCCESS"));
+            var responseData = new { Token = result.Token, Roles = result.Roles };
+            return Ok(ApiResponse<object>.Success(responseData, result.Message, "LOGIN_SUCCESS"));
         }
         catch (UserFriendlyException ex)
         {
-            return BadRequest(ApiResponse<string>.Failure(ex.ErrorCode, ex.Message));
+            return BadRequest(ApiResponse<object>.Failure(ex.ErrorCode, ex.Message));
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ApiResponse<string>.Failure("SERVER_ERROR", "Lỗi hệ thống khi đăng nhập.", ex.Message));
+            return StatusCode(500, ApiResponse<object>.Failure("SERVER_ERROR", "Lỗi hệ thống khi đăng nhập.", ex.Message));
         }
     }
 

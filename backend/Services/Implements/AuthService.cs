@@ -64,19 +64,20 @@ namespace backend.Services.Implements
                 throw new UserFriendlyException("Sai tài khoản hoặc mật khẩu", "LOGIN_FAILED");
             }
 
-            var token = await GenerateJwtToken(user);
+            var roles = await _userRepository.GetRolesAsync(user);
+            var token = await GenerateJwtToken(user, roles);
 
             return new AuthResponseDto
             {
                 IsSuccess = true,
                 Message = "Đăng nhập thành công",
-                Token = token
+                Token = token,
+                Roles = roles
             };
         }
 
-        private async Task<string> GenerateJwtToken(ApplicationUser user)
+        private async Task<string> GenerateJwtToken(ApplicationUser user, IList<string> roles)
         {
-            var roles = await _userRepository.GetRolesAsync(user);
             
             var claims = new List<Claim>
             {
@@ -96,7 +97,7 @@ namespace backend.Services.Implements
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.Now.AddHours(2),
+                Expires = DateTime.Now.AddHours(1),
                 Issuer = _jwtOptions.Issuer,
                 Audience = _jwtOptions.Audience,
                 SigningCredentials = creds
