@@ -37,5 +37,23 @@ namespace backend.Repositories.Implements
         {
             return await _userManager.AddToRoleAsync(user, role);
         }
+        // ===== User Profile =====
+
+        public async Task<ApplicationUser?> FindByIdAsync(string userId)
+        {
+            return await _userManager.FindByIdAsync(userId);
+        }
+
+        public async Task<IdentityResult> UpdateAsync(ApplicationUser user)
+        {
+            return await _userManager.UpdateAsync(user);
+        }
+
+        public async Task<IdentityResult> ChangePasswordAsync(ApplicationUser user, string currentPassword, string newPassword)
+        {
+            return await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
+        }
     }
+
 }
+

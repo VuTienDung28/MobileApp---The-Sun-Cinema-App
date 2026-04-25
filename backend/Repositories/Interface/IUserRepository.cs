@@ -10,5 +10,9 @@ namespace backend.Repositories.Interface
         Task<bool> CheckPasswordAsync(ApplicationUser user, string password);
         Task<IList<string>> GetRolesAsync(ApplicationUser user);
         Task<IdentityResult> AddToRoleAsync(ApplicationUser user, string role);
+        // ===== User Profile =====
+        Task<ApplicationUser?> FindByIdAsync(string userId);
+        Task<IdentityResult> UpdateAsync(ApplicationUser user);
+        Task<IdentityResult> ChangePasswordAsync(ApplicationUser user, string currentPassword, string newPassword);
     }
 }
