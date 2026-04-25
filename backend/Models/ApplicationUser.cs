@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Identity;
+using System.Collections.Generic;
+using System;
 
 namespace backend.Models
 {
@@ -9,5 +11,7 @@ namespace backend.Models
         public string? Gender { get; set; }
         public string? Province { get; set; }
         public string? District { get; set; }
+
+        public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
     }
 }

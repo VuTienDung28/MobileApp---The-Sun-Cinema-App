@@ -1,8 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
-using System.Reflection.Emit;
 using backend.Models;
 
 namespace backend.Data
@@ -13,30 +11,23 @@ namespace backend.Data
         {
         }
 
-        // Khai báo các bảng nghiệp vụ của bạn
-        //public DbSet<MediaFile> MediaFiles { get; set; }
-        //public DbSet<Order> Orders { get; set; }
-        //public DbSet<Payment> Payments { get; set; }
+        public DbSet<Voucher> Vouchers { get; set; }
+        public DbSet<Combo> Combos { get; set; }
+        public DbSet<Movie> Movies { get; set; }
+        public DbSet<Cinema> Cinemas { get; set; }
+        public DbSet<Room> Rooms { get; set; }
+        public DbSet<Seat> Seats { get; set; }
+        public DbSet<Showtime> Showtimes { get; set; }
+        public DbSet<Booking> Bookings { get; set; }
+        public DbSet<BookingCombo> BookingCombos { get; set; }
+        public DbSet<Payment> Payments { get; set; }
+        public DbSet<Ticket> Tickets { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
-            // Bắt buộc gọi base để EF Core cấu hình các bảng Identity trước
             base.OnModelCreating(builder);
 
-            // 1. Mối quan hệ: IdentityUser (1) - Order (N)
-            //builder.Entity<Order>()
-            //    .HasOne(o => o.User)
-            //    .WithMany() // Một User có thể có nhiều Order 
-            //    .HasForeignKey(o => o.UserId)
-            //    .OnDelete(DeleteBehavior.Cascade); // Xóa User -> Xóa luôn đơn hàng 
-
-            //// 2. Mối quan hệ: Order (1) - Payment (1)
-            //builder.Entity<Payment>()
-            //    .HasOne(p => p.Order)
-            //    .WithOne(o => o.Payment)
-            //    .HasForeignKey<Payment>(p => p.OrderId)
-            //    .OnDelete(DeleteBehavior.Cascade); // Xóa Order -> Xóa luôn bill thanh toán
-
+            // Rename Identity tables
             builder.Entity<ApplicationUser>().ToTable("Users");
             builder.Entity<IdentityRole>().ToTable("Roles");
             builder.Entity<IdentityUserRole<string>>().ToTable("UserRoles");
@@ -44,6 +35,77 @@ namespace backend.Data
             builder.Entity<IdentityUserLogin<string>>().ToTable("UserLogins");
             builder.Entity<IdentityRoleClaim<string>>().ToTable("RoleClaims");
             builder.Entity<IdentityUserToken<string>>().ToTable("UserTokens");
+
+            // BookingCombo - Composite Key
+            builder.Entity<BookingCombo>()
+                .HasKey(bc => new { bc.BookingId, bc.ComboId });
+
+            builder.Entity<BookingCombo>()
+                .HasOne(bc => bc.Booking)
+                .WithMany(b => b.BookingCombos)
+                .HasForeignKey(bc => bc.BookingId);
+
+            builder.Entity<BookingCombo>()
+                .HasOne(bc => bc.Combo)
+                .WithMany(c => c.BookingCombos)
+                .HasForeignKey(bc => bc.ComboId);
+
+            // Booking - Payment (1-1)
+            builder.Entity<Payment>()
+                .HasOne(p => p.Booking)
+                .WithOne(b => b.Payment)
+                .HasForeignKey<Payment>(p => p.BookingId);
+
+            // Restrict Cascade Delete to prevent deleting a User deleting all Bookings, etc.
+            builder.Entity<Booking>()
+                .HasOne(b => b.User)
+                .WithMany(u => u.Bookings)
+                .HasForeignKey(b => b.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<Booking>()
+                .HasOne(b => b.Showtime)
+                .WithMany(s => s.Bookings)
+                .HasForeignKey(b => b.ShowtimeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<Showtime>()
+                .HasOne(s => s.Movie)
+                .WithMany(m => m.Showtimes)
+                .HasForeignKey(s => s.MovieId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<Showtime>()
+                .HasOne(s => s.Room)
+                .WithMany(r => r.Showtimes)
+                .HasForeignKey(s => s.RoomId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<Ticket>()
+                .HasOne(t => t.Booking)
+                .WithMany(b => b.Tickets)
+                .HasForeignKey(t => t.BookingId)
+                .OnDelete(DeleteBehavior.Cascade); // If booking is deleted, tickets can be deleted
+
+            builder.Entity<Ticket>()
+                .HasOne(t => t.Seat)
+                .WithMany(s => s.Tickets)
+                .HasForeignKey(t => t.SeatId)
+                .OnDelete(DeleteBehavior.Restrict);
+                
+            // Ensure unique voucher code
+            builder.Entity<Voucher>()
+                .HasIndex(v => v.Code)
+                .IsUnique();
+                
+            // Decimal configurations
+            builder.Entity<Voucher>().Property(x => x.MaxDiscount).HasColumnType("decimal(10,2)");
+            builder.Entity<Combo>().Property(x => x.Price).HasColumnType("decimal(10,2)");
+            builder.Entity<Showtime>().Property(x => x.BasePrice).HasColumnType("decimal(10,2)");
+            builder.Entity<Booking>().Property(x => x.TotalPrice).HasColumnType("decimal(10,2)");
+            builder.Entity<BookingCombo>().Property(x => x.Price).HasColumnType("decimal(10,2)");
+            builder.Entity<Payment>().Property(x => x.Amount).HasColumnType("decimal(10,2)");
+            builder.Entity<Ticket>().Property(x => x.Price).HasColumnType("decimal(10,2)");
         }
     }
 }
