@@ -1,38 +1,21 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import useAuthStore from '../../store/useAuthStore';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../types';
 
-const UserHomeScreen = () => {
-  const signOut = useAuthStore(state => state.signOut);
+type Props = NativeStackScreenProps<RootStackParamList, 'UserHome'>;
 
-  const handleLogout = () => {
-    Alert.alert(
-      "Đăng xuất",
-      "Bạn có chắc chắn muốn đăng xuất?",
-      [
-        {
-          text: "Hủy",
-          style: "cancel"
-        },
-        { 
-          text: "Xác nhận", 
-          onPress: () => signOut(),
-          style: 'destructive'
-        }
-      ]
-    );
-  };
-
+const UserHomeScreen: React.FC<Props> = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>THE SUN CINEMA</Text>
-        <TouchableOpacity onPress={handleLogout} style={styles.avatarButton}>
+        <TouchableOpacity onPress={() => navigation.navigate('Profile')} style={styles.avatarButton}>
           <Ionicons name="person-circle" size={40} color="#FFCC00" />
         </TouchableOpacity>
       </View>
-      
+
       <View style={styles.content}>
         <Ionicons name="film" size={100} color="#BDBDBD" />
         <Text style={styles.welcomeText}>Xin chào Khách hàng!</Text>

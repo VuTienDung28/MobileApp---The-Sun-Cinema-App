@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+
 const storage = {
-  getToken: async () => {
+  getToken: async (): Promise<string | null> => {
     try {
       if (Platform.OS === 'web') {
         return sessionStorage.getItem('userToken');
@@ -11,7 +12,7 @@ const storage = {
       return null;
     }
   },
-  setToken: async (token) => {
+  setToken: async (token: string): Promise<void> => {
     try {
       if (Platform.OS === 'web') {
         sessionStorage.setItem('userToken', token);
@@ -22,7 +23,7 @@ const storage = {
       console.error('Error saving token', e);
     }
   },
-  removeToken: async () => {
+  removeToken: async (): Promise<void> => {
     try {
       if (Platform.OS === 'web') {
         sessionStorage.removeItem('userToken');
@@ -33,7 +34,7 @@ const storage = {
       console.error('Error removing token', e);
     }
   },
-  getRole: async () => {
+  getRole: async (): Promise<string | null> => {
     try {
       if (Platform.OS === 'web') {
         return sessionStorage.getItem('userRole');
@@ -43,7 +44,7 @@ const storage = {
       return null;
     }
   },
-  setRole: async (role) => {
+  setRole: async (role: string): Promise<void> => {
     try {
       if (Platform.OS === 'web') {
         sessionStorage.setItem('userRole', role);
@@ -54,7 +55,7 @@ const storage = {
       console.error('Error saving role', e);
     }
   },
-  removeRole: async () => {
+  removeRole: async (): Promise<void> => {
     try {
       if (Platform.OS === 'web') {
         sessionStorage.removeItem('userRole');
@@ -66,4 +67,5 @@ const storage = {
     }
   }
 };
+
 export default storage;

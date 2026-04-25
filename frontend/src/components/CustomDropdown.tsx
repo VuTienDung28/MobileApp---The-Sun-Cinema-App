@@ -1,7 +1,17 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, FlatList, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-const CustomDropdown = ({
+import { DropdownOption } from '../types';
+
+interface Props {
+  iconName?: React.ComponentProps<typeof Ionicons>['name'];
+  placeholder?: string;
+  value: string;
+  onSelect: (value: string) => void;
+  options?: DropdownOption[];
+}
+
+const CustomDropdown: React.FC<Props> = ({
   iconName,
   placeholder,
   value,
@@ -9,15 +19,18 @@ const CustomDropdown = ({
   options = [],
 }) => {
   const [modalVisible, setModalVisible] = useState(false);
-  const handleSelect = (item) => {
+
+  const handleSelect = (item: DropdownOption) => {
     onSelect(item.value);
     setModalVisible(false);
   };
+
   const selectedLabel = options.find(opt => opt.value === value)?.label;
+
   return (
     <>
-      <TouchableOpacity 
-        style={styles.container} 
+      <TouchableOpacity
+        style={styles.container}
         onPress={() => setModalVisible(true)}
       >
         {iconName && (
@@ -28,6 +41,7 @@ const CustomDropdown = ({
         </Text>
         <Ionicons name="chevron-down" size={20} color="#8A7851" />
       </TouchableOpacity>
+
       <Modal
         visible={modalVisible}
         transparent={true}
@@ -46,7 +60,7 @@ const CustomDropdown = ({
               data={options}
               keyExtractor={(item) => item.value}
               renderItem={({ item }) => (
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[
                     styles.optionItem,
                     value === item.value && styles.optionItemSelected
@@ -71,6 +85,7 @@ const CustomDropdown = ({
     </>
   );
 };
+
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
@@ -137,4 +152,5 @@ const styles = StyleSheet.create({
     color: '#FFCC00',
   }
 });
+
 export default CustomDropdown;

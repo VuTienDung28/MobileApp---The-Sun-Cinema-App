@@ -1,18 +1,24 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TouchableWithoutFeedback, Keyboard, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import CustomInput from '../../components/CustomInput';
 import CustomButton from '../../components/CustomButton';
 import useAuthStore from '../../store/useAuthStore';
 import useAlertStore from '../../store/useAlertStore';
 import authService from '../../services/authService';
-const LoginScreen = ({ navigation }) => {
+import { RootStackParamList, UserRole } from '../../types';
+
+type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
+
+const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const signIn = useAuthStore(state => state.signIn);
+
   const handleLogin = async () => {
     Keyboard.dismiss();
     if (!email || !password) {
@@ -24,17 +30,18 @@ const LoginScreen = ({ navigation }) => {
       const response = await authService.login(email, password);
       if (response && response.isSuccess) {
         const { token, roles } = response.data;
-        const role = roles.includes('Admin') ? 'Admin' : 'User';
+        const role: UserRole = roles.includes('Admin') ? 'Admin' : 'User';
         await signIn(token, role);
       } else {
         useAlertStore.getState().showAlert('Đăng nhập thất bại', response.message || 'Lỗi không xác định', { type: 'error' });
       }
-    } catch (error) {
+    } catch (error: any) {
       useAlertStore.getState().showAlert('Lỗi', error.message || 'Sai tài khoản hoặc mật khẩu', { type: 'error' });
     } finally {
       setIsLoading(false);
     }
   };
+
   const Content = (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -50,7 +57,6 @@ const LoginScreen = ({ navigation }) => {
           onChangeText={setEmail}
           keyboardType="email-address"
         />
-        
         <CustomInput
           iconName="lock-closed"
           placeholder="Mật khẩu"
@@ -87,8 +93,9 @@ const LoginScreen = ({ navigation }) => {
       </View>
     </SafeAreaView>
   );
+
   if (Platform.OS === 'web') {
-    return <View style={{flex: 1}}>{Content}</View>;
+    return <View style={{ flex: 1 }}>{Content}</View>;
   }
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -96,10 +103,11 @@ const LoginScreen = ({ navigation }) => {
     </TouchableWithoutFeedback>
   );
 };
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF9E6', // Light yellow background
+    backgroundColor: '#FFF9E6',
     justifyContent: 'center',
   },
   header: {
@@ -167,4 +175,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
   }
 });
+
 export default LoginScreen;

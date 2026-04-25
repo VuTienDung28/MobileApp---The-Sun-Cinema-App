@@ -1,22 +1,29 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import CustomInput from '../../components/CustomInput';
 import CustomButton from '../../components/CustomButton';
 import CustomDropdown from '../../components/CustomDropdown';
 import authService from '../../services/authService';
 import useAlertStore from '../../store/useAlertStore';
-const genderOptions = [
+import { RootStackParamList, RegisterRequest, DropdownOption } from '../../types';
+
+type Props = NativeStackScreenProps<RootStackParamList, 'Register'>;
+
+const genderOptions: DropdownOption[] = [
   { label: 'Nam', value: 'Male' },
   { label: 'Nữ', value: 'Female' },
 ];
-const provinceOptions = [
+
+const provinceOptions: DropdownOption[] = [
   { label: 'Hà Nội', value: 'HN' },
   { label: 'TP. Hồ Chí Minh', value: 'HCM' },
   { label: 'Đà Nẵng', value: 'DN' },
 ];
-const districtOptionsMap = {
+
+const districtOptionsMap: Record<string, DropdownOption[]> = {
   'HN': [
     { label: 'Quận Ba Đình', value: 'BaDinh' },
     { label: 'Quận Hoàn Kiếm', value: 'HoanKiem' },
@@ -32,26 +39,28 @@ const districtOptionsMap = {
     { label: 'Quận Sơn Trà', value: 'SonTra' },
   ]
 };
-const RegisterScreen = ({ navigation }) => {
-  const [formData, setFormData] = useState({
+
+const RegisterScreen: React.FC<Props> = ({ navigation }) => {
+  const [formData, setFormData] = useState<RegisterRequest>({
     fullName: '',
     phoneNumber: '',
     email: '',
     password: '',
     confirmPassword: '',
-    dateOfBirth: '', 
+    dateOfBirth: '',
     gender: '',
     province: '',
     district: ''
   });
-  
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const handleDateChange = (event, selectedDate) => {
+
+  const handleDateChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
     setShowDatePicker(Platform.OS === 'ios');
     if (selectedDate) {
       setDate(selectedDate);
@@ -59,6 +68,7 @@ const RegisterScreen = ({ navigation }) => {
       setFormData({ ...formData, dateOfBirth: formattedDate });
     }
   };
+
   const handleRegister = async () => {
     if (!formData.email || !formData.password || !formData.fullName) {
       useAlertStore.getState().showAlert('Lỗi', 'Vui lòng nhập các thông tin bắt buộc', { type: 'warning' });
@@ -79,19 +89,20 @@ const RegisterScreen = ({ navigation }) => {
       } else {
         useAlertStore.getState().showAlert('Lỗi', response.message || 'Đăng ký thất bại', { type: 'error' });
       }
-    } catch (error) {
+    } catch (error: any) {
       useAlertStore.getState().showAlert('Lỗi', error.message || 'Lỗi kết nối máy chủ', { type: 'error' });
     } finally {
       setIsLoading(false);
     }
   };
+
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView 
-        style={{ flex: 1 }} 
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
@@ -105,28 +116,27 @@ const RegisterScreen = ({ navigation }) => {
               iconName="person"
               placeholder="Họ tên *"
               value={formData.fullName}
-              onChangeText={(text) => setFormData({...formData, fullName: text})}
+              onChangeText={(text) => setFormData({ ...formData, fullName: text })}
             />
-            
             <CustomInput
               iconName="call"
               placeholder="Số điện thoại"
               value={formData.phoneNumber}
-              onChangeText={(text) => setFormData({...formData, phoneNumber: text})}
+              onChangeText={(text) => setFormData({ ...formData, phoneNumber: text })}
               keyboardType="phone-pad"
             />
             <CustomInput
               iconName="mail"
               placeholder="Email *"
               value={formData.email}
-              onChangeText={(text) => setFormData({...formData, email: text})}
+              onChangeText={(text) => setFormData({ ...formData, email: text })}
               keyboardType="email-address"
             />
             <CustomInput
               iconName="lock-closed"
               placeholder="Mật khẩu *"
               value={formData.password}
-              onChangeText={(text) => setFormData({...formData, password: text})}
+              onChangeText={(text) => setFormData({ ...formData, password: text })}
               secureTextEntry={!showPassword}
               isPassword
               onTogglePassword={() => setShowPassword(!showPassword)}
@@ -135,7 +145,7 @@ const RegisterScreen = ({ navigation }) => {
               iconName="lock-closed"
               placeholder="Xác nhận mật khẩu *"
               value={formData.confirmPassword}
-              onChangeText={(text) => setFormData({...formData, confirmPassword: text})}
+              onChangeText={(text) => setFormData({ ...formData, confirmPassword: text })}
               secureTextEntry={!showConfirmPassword}
               isPassword
               onTogglePassword={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -145,7 +155,7 @@ const RegisterScreen = ({ navigation }) => {
                 iconName="calendar"
                 placeholder="Ngày sinh (YYYY-MM-DD)"
                 value={formData.dateOfBirth}
-                onChangeText={(text) => setFormData({...formData, dateOfBirth: text})}
+                onChangeText={(text) => setFormData({ ...formData, dateOfBirth: text })}
               />
             ) : (
               <>
@@ -173,7 +183,7 @@ const RegisterScreen = ({ navigation }) => {
                   placeholder="Giới tính"
                   value={formData.gender}
                   options={genderOptions}
-                  onSelect={(val) => setFormData({...formData, gender: val})}
+                  onSelect={(val) => setFormData({ ...formData, gender: val })}
                 />
               </View>
               <View style={styles.halfInput}>
@@ -182,7 +192,7 @@ const RegisterScreen = ({ navigation }) => {
                   placeholder="Khu vực"
                   value={formData.province}
                   options={provinceOptions}
-                  onSelect={(val) => setFormData({...formData, province: val, district: ''})}
+                  onSelect={(val) => setFormData({ ...formData, province: val, district: '' })}
                 />
               </View>
             </View>
@@ -191,7 +201,7 @@ const RegisterScreen = ({ navigation }) => {
               placeholder="Quận/huyện"
               value={formData.district}
               options={formData.province ? districtOptionsMap[formData.province] : []}
-              onSelect={(val) => setFormData({...formData, district: val})}
+              onSelect={(val) => setFormData({ ...formData, district: val })}
             />
             <CustomButton
               title="ĐĂNG KÝ"
@@ -210,6 +220,7 @@ const RegisterScreen = ({ navigation }) => {
     </SafeAreaView>
   );
 };
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -275,4 +286,5 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   }
 });
+
 export default RegisterScreen;

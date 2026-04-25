@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -10,12 +9,17 @@ import UserHomeScreen from './src/screens/Home/UserHomeScreen';
 import ProfileScreen from './src/screens/Profile/ProfileScreen';
 import useAuthStore from './src/store/useAuthStore';
 import CustomAlert from './src/components/CustomAlert';
+import { RootStackParamList } from './src/types';
+
 const Stack = createNativeStackNavigator();
+
 export default function App() {
   const { token, role, isLoading, initialize } = useAuthStore();
+
   useEffect(() => {
     initialize();
   }, []);
+
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -23,10 +27,11 @@ export default function App() {
       </View>
     );
   }
+
   return (
-    <>
+    <View style={{ flex: 1 }}>
       <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Navigator id="RootNavigator" screenOptions={{ headerShown: false }}>
           {token == null ? (
             <Stack.Group>
               <Stack.Screen name="Login" component={LoginScreen} />
@@ -44,9 +49,7 @@ export default function App() {
           )}
         </Stack.Navigator>
       </NavigationContainer>
-      
-      {/* Global Alert */}
       <CustomAlert />
-    </>
+    </View>
   );
 }

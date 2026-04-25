@@ -1,18 +1,27 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-const CustomButton = ({ 
-  title, 
-  onPress, 
-  variant = 'primary', // 'primary' or 'outline'
+
+interface Props {
+  title: string;
+  onPress: () => void;
+  variant?: 'primary' | 'outline';
+  iconName?: React.ComponentProps<typeof Ionicons>['name'];
+  isLoading?: boolean;
+}
+
+const CustomButton: React.FC<Props> = ({
+  title,
+  onPress,
+  variant = 'primary',
   iconName,
-  isLoading = false 
+  isLoading = false
 }) => {
   const isPrimary = variant === 'primary';
   return (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={[
-        styles.button, 
+        styles.button,
         isPrimary ? styles.primaryButton : styles.outlineButton
       ]}
       onPress={onPress}
@@ -23,11 +32,11 @@ const CustomButton = ({
       ) : (
         <>
           {iconName && (
-            <Ionicons 
-              name={iconName} 
-              size={20} 
-              color={isPrimary ? '#FFF' : '#8A7851'} 
-              style={styles.icon} 
+            <Ionicons
+              name={iconName}
+              size={20}
+              color={isPrimary ? '#FFF' : '#8A7851'}
+              style={styles.icon}
             />
           )}
           <Text style={[
@@ -41,6 +50,7 @@ const CustomButton = ({
     </TouchableOpacity>
   );
 };
+
 const styles = StyleSheet.create({
   button: {
     flexDirection: 'row',
@@ -72,4 +82,5 @@ const styles = StyleSheet.create({
     marginRight: 8,
   }
 });
+
 export default CustomButton;
