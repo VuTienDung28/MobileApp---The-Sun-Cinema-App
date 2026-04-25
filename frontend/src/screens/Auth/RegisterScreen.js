@@ -1,23 +1,21 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import CustomInput from '../../components/CustomInput';
 import CustomButton from '../../components/CustomButton';
 import CustomDropdown from '../../components/CustomDropdown';
 import authService from '../../services/authService';
-
+import useAlertStore from '../../store/useAlertStore';
 const genderOptions = [
   { label: 'Nam', value: 'Male' },
   { label: 'Nữ', value: 'Female' },
 ];
-
 const provinceOptions = [
   { label: 'Hà Nội', value: 'HN' },
   { label: 'TP. Hồ Chí Minh', value: 'HCM' },
   { label: 'Đà Nẵng', value: 'DN' },
 ];
-
 const districtOptionsMap = {
   'HN': [
     { label: 'Quận Ba Đình', value: 'BaDinh' },
@@ -34,7 +32,6 @@ const districtOptionsMap = {
     { label: 'Quận Sơn Trà', value: 'SonTra' },
   ]
 };
-
 const RegisterScreen = ({ navigation }) => {
   const [formData, setFormData] = useState({
     fullName: '',
@@ -52,48 +49,42 @@ const RegisterScreen = ({ navigation }) => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
-  // Date Picker State
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
-
   const handleDateChange = (event, selectedDate) => {
     setShowDatePicker(Platform.OS === 'ios');
     if (selectedDate) {
       setDate(selectedDate);
-      // Format to YYYY-MM-DD
       const formattedDate = selectedDate.toISOString().split('T')[0];
       setFormData({ ...formData, dateOfBirth: formattedDate });
     }
   };
-
   const handleRegister = async () => {
     if (!formData.email || !formData.password || !formData.fullName) {
-      Alert.alert('Lỗi', 'Vui lòng nhập các thông tin bắt buộc');
+      useAlertStore.getState().showAlert('Lỗi', 'Vui lòng nhập các thông tin bắt buộc', { type: 'warning' });
       return;
     }
-
     if (formData.password !== formData.confirmPassword) {
-      Alert.alert('Lỗi', 'Mật khẩu xác nhận không khớp!');
+      useAlertStore.getState().showAlert('Lỗi', 'Mật khẩu xác nhận không khớp!', { type: 'error' });
       return;
     }
-
     setIsLoading(true);
     try {
       const response = await authService.register(formData);
       if (response && response.isSuccess) {
-        Alert.alert('Thành công', 'Đăng ký thành công! Vui lòng đăng nhập.', [
-          { text: 'OK', onPress: () => navigation.navigate('Login') }
-        ]);
+        useAlertStore.getState().showAlert('Thành công', 'Đăng ký thành công! Vui lòng đăng nhập.', {
+          type: 'success',
+          buttons: [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
+        });
       } else {
-        Alert.alert('Lỗi', response.message || 'Đăng ký thất bại');
+        useAlertStore.getState().showAlert('Lỗi', response.message || 'Đăng ký thất bại', { type: 'error' });
       }
     } catch (error) {
-      Alert.alert('Lỗi', error.message || 'Lỗi kết nối máy chủ');
+      useAlertStore.getState().showAlert('Lỗi', error.message || 'Lỗi kết nối máy chủ', { type: 'error' });
     } finally {
       setIsLoading(false);
     }
   };
-
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView 
@@ -109,7 +100,6 @@ const RegisterScreen = ({ navigation }) => {
             <Text style={styles.title}>THE SUN</Text>
             <Text style={styles.subtitle}>Đặt vé xem phim</Text>
           </View>
-
           <View style={styles.formContainer}>
             <CustomInput
               iconName="person"
@@ -125,7 +115,6 @@ const RegisterScreen = ({ navigation }) => {
               onChangeText={(text) => setFormData({...formData, phoneNumber: text})}
               keyboardType="phone-pad"
             />
-
             <CustomInput
               iconName="mail"
               placeholder="Email *"
@@ -133,7 +122,6 @@ const RegisterScreen = ({ navigation }) => {
               onChangeText={(text) => setFormData({...formData, email: text})}
               keyboardType="email-address"
             />
-
             <CustomInput
               iconName="lock-closed"
               placeholder="Mật khẩu *"
@@ -143,7 +131,6 @@ const RegisterScreen = ({ navigation }) => {
               isPassword
               onTogglePassword={() => setShowPassword(!showPassword)}
             />
-
             <CustomInput
               iconName="lock-closed"
               placeholder="Xác nhận mật khẩu *"
@@ -153,24 +140,32 @@ const RegisterScreen = ({ navigation }) => {
               isPassword
               onTogglePassword={() => setShowConfirmPassword(!showConfirmPassword)}
             />
-
-            <TouchableOpacity style={styles.datePickerContainer} onPress={() => setShowDatePicker(true)}>
-              <Ionicons name="calendar" size={20} color="#8A7851" style={styles.dateIcon} />
-              <Text style={[styles.dateText, !formData.dateOfBirth && styles.datePlaceholder]}>
-                {formData.dateOfBirth ? formData.dateOfBirth : 'Ngày sinh (YYYY-MM-DD)'}
-              </Text>
-            </TouchableOpacity>
-
-            {showDatePicker && (
-              <DateTimePicker
-                value={date}
-                mode="date"
-                display="default"
-                onChange={handleDateChange}
-                maximumDate={new Date()}
+            {Platform.OS === 'web' ? (
+              <CustomInput
+                iconName="calendar"
+                placeholder="Ngày sinh (YYYY-MM-DD)"
+                value={formData.dateOfBirth}
+                onChangeText={(text) => setFormData({...formData, dateOfBirth: text})}
               />
+            ) : (
+              <>
+                <TouchableOpacity style={styles.datePickerContainer} onPress={() => setShowDatePicker(true)}>
+                  <Ionicons name="calendar" size={20} color="#8A7851" style={styles.dateIcon} />
+                  <Text style={[styles.dateText, !formData.dateOfBirth && styles.datePlaceholder]}>
+                    {formData.dateOfBirth ? formData.dateOfBirth : 'Ngày sinh (YYYY-MM-DD)'}
+                  </Text>
+                </TouchableOpacity>
+                {showDatePicker && (
+                  <DateTimePicker
+                    value={date}
+                    mode="date"
+                    display="default"
+                    onChange={handleDateChange}
+                    maximumDate={new Date()}
+                  />
+                )}
+              </>
             )}
-
             <View style={styles.row}>
               <View style={styles.halfInput}>
                 <CustomDropdown
@@ -191,7 +186,6 @@ const RegisterScreen = ({ navigation }) => {
                 />
               </View>
             </View>
-
             <CustomDropdown
               iconName="map"
               placeholder="Quận/huyện"
@@ -199,14 +193,12 @@ const RegisterScreen = ({ navigation }) => {
               options={formData.province ? districtOptionsMap[formData.province] : []}
               onSelect={(val) => setFormData({...formData, district: val})}
             />
-
             <CustomButton
               title="ĐĂNG KÝ"
               iconName="sunny"
               onPress={handleRegister}
               isLoading={isLoading}
             />
-
             <TouchableOpacity style={styles.loginLink} onPress={() => navigation.navigate('Login')}>
               <Text style={styles.loginText}>
                 Đã có tài khoản? <Text style={styles.loginTextBold}>Đăng nhập</Text>
@@ -218,7 +210,6 @@ const RegisterScreen = ({ navigation }) => {
     </SafeAreaView>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -284,5 +275,4 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   }
 });
-
 export default RegisterScreen;

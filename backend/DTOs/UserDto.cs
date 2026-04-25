@@ -56,4 +56,20 @@ namespace backend.DTOs
         [Required(ErrorMessage = "Xác nhận mật khẩu không được để trống")]
         public string ConfirmNewPassword { get; set; } = string.Empty;
     }
+     /// DTO request upload avatar — bọc IFormFile để Swagger generate đúng schema
+    /// </summary>
+    public class UploadAvatarRequestDto
+    {
+        [Required(ErrorMessage = "Vui lòng chọn file ảnh.")]
+        public IFormFile File { get; set; } = null!;
+    }
+
+    /// <summary>
+    /// DTO trả về sau khi upload avatar thành công
+    /// </summary>
+    public class UpdateAvatarResponseDto
+    {
+        /// <summary>Đường dẫn tương đối. VD: /avatar-images/user123_1714000000.jpg</summary>
+        public string AvatarRelativePath { get; set; } = string.Empty;
+    }
 }

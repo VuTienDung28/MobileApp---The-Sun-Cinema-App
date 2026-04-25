@@ -1,34 +1,13 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import useAuthStore from '../../store/useAuthStore';
-
-const AdminHomeScreen = () => {
-  const signOut = useAuthStore(state => state.signOut);
-
-  const handleLogout = () => {
-    Alert.alert(
-      "Đăng xuất",
-      "Bạn có chắc chắn muốn đăng xuất?",
-      [
-        {
-          text: "Hủy (Cancel)",
-          style: "cancel"
-        },
-        { 
-          text: "Xác nhận (OK)", 
-          onPress: () => signOut(),
-          style: 'destructive'
-        }
-      ]
-    );
-  };
-
+const AdminHomeScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>ADMIN DASHBOARD</Text>
-        <TouchableOpacity onPress={handleLogout} style={styles.avatarButton}>
+        <TouchableOpacity onPress={() => navigation.navigate('Profile')} style={styles.avatarButton}>
           <Ionicons name="person-circle" size={40} color="#FFCC00" />
         </TouchableOpacity>
       </View>
@@ -41,7 +20,6 @@ const AdminHomeScreen = () => {
     </SafeAreaView>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -84,5 +62,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   }
 });
-
 export default AdminHomeScreen;

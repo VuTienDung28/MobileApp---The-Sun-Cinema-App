@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, FlatList, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
 const CustomDropdown = ({
   iconName,
   placeholder,
@@ -10,14 +9,11 @@ const CustomDropdown = ({
   options = [],
 }) => {
   const [modalVisible, setModalVisible] = useState(false);
-
   const handleSelect = (item) => {
     onSelect(item.value);
     setModalVisible(false);
   };
-
   const selectedLabel = options.find(opt => opt.value === value)?.label;
-
   return (
     <>
       <TouchableOpacity 
@@ -32,7 +28,6 @@ const CustomDropdown = ({
         </Text>
         <Ionicons name="chevron-down" size={20} color="#8A7851" />
       </TouchableOpacity>
-
       <Modal
         visible={modalVisible}
         transparent={true}
@@ -76,7 +71,6 @@ const CustomDropdown = ({
     </>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
@@ -143,5 +137,4 @@ const styles = StyleSheet.create({
     color: '#FFCC00',
   }
 });
-
 export default CustomDropdown;

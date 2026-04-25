@@ -97,4 +97,30 @@ public class UserController : ControllerBase
             return StatusCode(500, ApiResponse<string>.Failure("SERVER_ERROR", "Lỗi hệ thống khi đổi mật khẩu.", ex.Message));
         }
     }
+
+    // =============================================
+    // PUT /api/user/avatar
+    // Upload ảnh đại diện lên MinIO
+    // =============================================
+    [HttpPut("avatar")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> UpdateAvatar([FromForm] UploadAvatarRequestDto request)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            var result = await _userService.UpdateAvatarAsync(userId, request.File);
+            return Ok(ApiResponse<UpdateAvatarResponseDto>.Success(result, "Cập nhật ảnh đại diện thành công", "UPDATE_AVATAR_SUCCESS"));
+        }
+        catch (UserFriendlyException ex)
+        {
+            return BadRequest(ApiResponse<string>.Failure(ex.ErrorCode, ex.Message));
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, ApiResponse<string>.Failure("SERVER_ERROR", "Lỗi hệ thống khi upload ảnh.", ex.Message));
+        }
+
+    }
+    
 }

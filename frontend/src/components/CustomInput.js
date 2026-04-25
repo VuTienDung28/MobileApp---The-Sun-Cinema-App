@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
 const CustomInput = ({ 
   iconName, 
   placeholder, 
@@ -38,7 +37,6 @@ const CustomInput = ({
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
@@ -61,5 +59,4 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   }
 });
-
 export default CustomInput;

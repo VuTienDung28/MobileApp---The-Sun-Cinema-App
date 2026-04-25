@@ -95,6 +95,10 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 
+// ===== Storage Configuration =====
+builder.Services.AddScoped<IStorageService, MinIOStorageService>();
+builder.Services.Configure<MinIOOptions>(builder.Configuration.GetSection("MinIO"));
+
 
 // ===== CORS Configuration =====
 builder.Services.AddCors(options =>

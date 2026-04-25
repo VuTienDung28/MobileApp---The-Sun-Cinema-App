@@ -1,14 +1,12 @@
 import axios from 'axios';
 import storage from '../utils/storage';
 import useAuthStore from '../store/useAuthStore';
-
 const axiosClient = axios.create({
   baseURL: process.env.EXPO_PUBLIC_API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
 });
-
 axiosClient.interceptors.request.use(
   async (config) => {
     const token = await storage.getToken();
@@ -21,7 +19,6 @@ axiosClient.interceptors.request.use(
     return Promise.reject(error);
   }
 );
-
 axiosClient.interceptors.response.use(
   (response) => {
     if (response && response.data) {
@@ -38,5 +35,4 @@ axiosClient.interceptors.response.use(
     throw error.response?.data || error;
   }
 );
-
 export default axiosClient;

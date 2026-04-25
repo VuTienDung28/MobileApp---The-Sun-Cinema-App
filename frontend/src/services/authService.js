@@ -1,5 +1,4 @@
 import axiosClient from '../api/axiosClient';
-
 const authService = {
   login: async (email, password) => {
     return await axiosClient.post('/auth/login', { email, password });
@@ -8,5 +7,4 @@ const authService = {
     return await axiosClient.post('/auth/register', userData);
   }
 };
-
 export default authService;

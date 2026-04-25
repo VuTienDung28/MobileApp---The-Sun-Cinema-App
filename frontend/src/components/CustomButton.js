@@ -1,7 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
 const CustomButton = ({ 
   title, 
   onPress, 
@@ -10,7 +9,6 @@ const CustomButton = ({
   isLoading = false 
 }) => {
   const isPrimary = variant === 'primary';
-
   return (
     <TouchableOpacity 
       style={[
@@ -43,7 +41,6 @@ const CustomButton = ({
     </TouchableOpacity>
   );
 };
-
 const styles = StyleSheet.create({
   button: {
     flexDirection: 'row',
@@ -75,5 +72,4 @@ const styles = StyleSheet.create({
     marginRight: 8,
   }
 });
-
 export default CustomButton;

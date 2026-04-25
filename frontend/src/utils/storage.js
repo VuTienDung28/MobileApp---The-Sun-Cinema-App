@@ -1,6 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
-
 const storage = {
   getToken: async () => {
     try {
@@ -67,5 +66,4 @@ const storage = {
     }
   }
 };
-
 export default storage;

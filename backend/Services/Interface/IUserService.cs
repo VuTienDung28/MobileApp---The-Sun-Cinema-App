@@ -13,5 +13,8 @@ namespace backend.Services.Interface
 
         /// <summary>Thay đổi mật khẩu người dùng</summary>
         Task ChangePasswordAsync(string userId, ChangePasswordDto dto);
+
+        /// <summary>Upload ảnh đại diện lên MinIO, lưu relative path vào DB</summary>
+        Task<UpdateAvatarResponseDto> UpdateAvatarAsync(string userId, IFormFile file);
     }
 }
