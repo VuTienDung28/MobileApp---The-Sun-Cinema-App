@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace backend.Models
@@ -10,7 +10,13 @@ namespace backend.Models
         public string Description { get; set; } = string.Empty;
         public int Duration { get; set; }
         public DateTime ReleaseDate { get; set; }
-        public string PosterUrl { get; set; } = string.Empty;
+
+        /// <summary>Poster nhỏ — dùng cho card danh sách phim</summary>
+        public string ThumbnailPosterUrl { get; set; } = string.Empty;
+
+        /// <summary>Poster lớn — dùng làm ảnh nền trang chi tiết phim</summary>
+        public string BackdropPosterUrl { get; set; } = string.Empty;
+
         public string AgeRestriction { get; set; } = string.Empty;
         public string MovieGenre { get; set; } = string.Empty;
         public string Language { get; set; } = string.Empty;
