@@ -5,6 +5,8 @@ import { ActivityIndicator, View } from 'react-native';
 import LoginScreen from './src/screens/Auth/LoginScreen';
 import RegisterScreen from './src/screens/Auth/RegisterScreen';
 import AdminHomeScreen from './src/screens/Home/AdminHomeScreen';
+import AddMovieScreen from './src/screens/Home/AddMovieScreen';  
+import AddTheaterScreen from './src/screens/Home/AddTheaterScreen';
 import UserHomeScreen from './src/screens/Home/UserHomeScreen';
 import ProfileScreen from './src/screens/Profile/ProfileScreen';
 import useAuthStore from './src/store/useAuthStore';
@@ -40,7 +42,11 @@ export default function App() {
           ) : (
             <Stack.Group>
               {role === 'Admin' ? (
-                <Stack.Screen name="AdminHome" component={AdminHomeScreen} />
+                <>
+                  <Stack.Screen name="AdminHome" component={AdminHomeScreen} />
+                  <Stack.Screen name="AddMovie" component={AddMovieScreen} /> 
+                  <Stack.Screen name="AddTheater" component={AddTheaterScreen} /> 
+                </>
               ) : (
                 <Stack.Screen name="UserHome" component={UserHomeScreen} />
               )}
