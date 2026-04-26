@@ -55,7 +55,5 @@ export type RootStackParamList = {
   Register: undefined;
   UserHome: undefined;
   AdminHome: undefined;
-  AddMovie: undefined;
-  AddTheater: undefined;
   Profile: undefined;
 };
