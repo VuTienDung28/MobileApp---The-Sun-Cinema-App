@@ -42,7 +42,7 @@ public class AuthController : ControllerBase
         try
         {
             var result = await _authService.LoginAsync(loginDto);
-            var responseData = new { Token = result.Token, Roles = result.Roles };
+            var responseData = new { Token = result.Token, RefreshToken = result.RefreshToken, Roles = result.Roles };
             return Ok(ApiResponse<object>.Success(responseData, result.Message, "LOGIN_SUCCESS"));
         }
         catch (UserFriendlyException ex)
@@ -54,6 +54,26 @@ public class AuthController : ControllerBase
             return StatusCode(500, ApiResponse<object>.Failure("SERVER_ERROR", "Lỗi hệ thống khi đăng nhập.", ex.Message));
         }
     }
+
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh([FromBody] TokenRequestDto tokenRequestDto)
+    {
+        try
+        {
+            var result = await _authService.RefreshTokenAsync(tokenRequestDto);
+            var responseData = new { Token = result.Token, RefreshToken = result.RefreshToken, Roles = result.Roles };
+            return Ok(ApiResponse<object>.Success(responseData, "Làm mới token thành công", "REFRESH_SUCCESS"));
+        }
+        catch (UserFriendlyException ex)
+        {
+            return BadRequest(ApiResponse<object>.Failure(ex.ErrorCode, ex.Message));
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, ApiResponse<object>.Failure("SERVER_ERROR", "Lỗi hệ thống khi làm mới token.", ex.Message));
+        }
+    }
+
 
     [Authorize(Policy = "AdminOnly")]
     [HttpGet("admin-test")]

@@ -8,6 +8,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace backend.Services.Implements
@@ -65,20 +66,58 @@ namespace backend.Services.Implements
             }
 
             var roles = await _userRepository.GetRolesAsync(user);
-            var token = await GenerateJwtToken(user, roles);
+            var token = GenerateJwtToken(user, roles);
+            var refreshToken = GenerateRefreshToken();
+
+            user.RefreshToken = refreshToken;
+            user.RefreshTokenExpiryTime = DateTime.Now.AddDays(7); // Refresh token có hạn 7 ngày
+            await _userRepository.UpdateAsync(user);
 
             return new AuthResponseDto
             {
                 IsSuccess = true,
                 Message = "Đăng nhập thành công",
                 Token = token,
+                RefreshToken = refreshToken,
                 Roles = roles
             };
         }
 
-        private async Task<string> GenerateJwtToken(ApplicationUser user, IList<string> roles)
+        public async Task<AuthResponseDto> RefreshTokenAsync(TokenRequestDto tokenRequestDto)
         {
-            
+            var principal = GetPrincipalFromExpiredToken(tokenRequestDto.AccessToken);
+            var email = principal.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+
+            if (email == null)
+            {
+                throw new UserFriendlyException("Token không hợp lệ", "INVALID_TOKEN");
+            }
+
+            var user = await _userRepository.FindByEmailAsync(email);
+
+            if (user == null || user.RefreshToken != tokenRequestDto.RefreshToken || user.RefreshTokenExpiryTime <= DateTime.Now)
+            {
+                throw new UserFriendlyException("Refresh token không hợp lệ hoặc đã hết hạn", "INVALID_REFRESH_TOKEN");
+            }
+
+            var roles = await _userRepository.GetRolesAsync(user);
+            var newAccessToken = GenerateJwtToken(user, roles);
+            var newRefreshToken = GenerateRefreshToken();
+
+            user.RefreshToken = newRefreshToken;
+            await _userRepository.UpdateAsync(user);
+
+            return new AuthResponseDto
+            {
+                IsSuccess = true,
+                Token = newAccessToken,
+                RefreshToken = newRefreshToken,
+                Roles = roles
+            };
+        }
+
+        private string GenerateJwtToken(ApplicationUser user, IList<string> roles)
+        {
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, user.UserName!),
@@ -97,7 +136,7 @@ namespace backend.Services.Implements
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.Now.AddHours(1),
+                Expires = DateTime.Now.AddMinutes(15), // Access token giảm xuống 15 phút để test refresh
                 Issuer = _jwtOptions.Issuer,
                 Audience = _jwtOptions.Audience,
                 SigningCredentials = creds
@@ -108,5 +147,34 @@ namespace backend.Services.Implements
 
             return tokenHandler.WriteToken(token);
         }
+
+        private string GenerateRefreshToken()
+        {
+            var randomNumber = new byte[64];
+            using var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(randomNumber);
+            return Convert.ToBase64String(randomNumber);
+        }
+
+        private ClaimsPrincipal GetPrincipalFromExpiredToken(string token)
+        {
+            var tokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateAudience = false,
+                ValidateIssuer = false,
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtOptions.Key)),
+                ValidateLifetime = false // Quan trọng: không check hạn ở đây vì mình đang refresh từ token đã hết hạn
+            };
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken securityToken);
+            
+            if (securityToken is not JwtSecurityToken jwtSecurityToken || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
+                throw new SecurityTokenException("Invalid token");
+
+            return principal;
+        }
     }
 }
+

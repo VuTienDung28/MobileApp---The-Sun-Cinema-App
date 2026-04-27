@@ -1,4 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
 const storage = {
@@ -7,7 +7,7 @@ const storage = {
       if (Platform.OS === 'web') {
         return sessionStorage.getItem('userToken');
       }
-      return await AsyncStorage.getItem('userToken');
+      return await SecureStore.getItemAsync('userToken');
     } catch (e) {
       return null;
     }
@@ -17,7 +17,7 @@ const storage = {
       if (Platform.OS === 'web') {
         sessionStorage.setItem('userToken', token);
       } else {
-        await AsyncStorage.setItem('userToken', token);
+        await SecureStore.setItemAsync('userToken', token);
       }
     } catch (e) {
       console.error('Error saving token', e);
@@ -28,7 +28,7 @@ const storage = {
       if (Platform.OS === 'web') {
         sessionStorage.removeItem('userToken');
       } else {
-        await AsyncStorage.removeItem('userToken');
+        await SecureStore.deleteItemAsync('userToken');
       }
     } catch (e) {
       console.error('Error removing token', e);
@@ -39,7 +39,7 @@ const storage = {
       if (Platform.OS === 'web') {
         return sessionStorage.getItem('userRole');
       }
-      return await AsyncStorage.getItem('userRole');
+      return await SecureStore.getItemAsync('userRole');
     } catch (e) {
       return null;
     }
@@ -49,7 +49,7 @@ const storage = {
       if (Platform.OS === 'web') {
         sessionStorage.setItem('userRole', role);
       } else {
-        await AsyncStorage.setItem('userRole', role);
+        await SecureStore.setItemAsync('userRole', role);
       }
     } catch (e) {
       console.error('Error saving role', e);
@@ -60,12 +60,45 @@ const storage = {
       if (Platform.OS === 'web') {
         sessionStorage.removeItem('userRole');
       } else {
-        await AsyncStorage.removeItem('userRole');
+        await SecureStore.deleteItemAsync('userRole');
       }
     } catch (e) {
       console.error('Error removing role', e);
     }
+  },
+  getRefreshToken: async (): Promise<string | null> => {
+    try {
+      if (Platform.OS === 'web') {
+        return sessionStorage.getItem('refreshToken');
+      }
+      return await SecureStore.getItemAsync('refreshToken');
+    } catch (e) {
+      return null;
+    }
+  },
+  setRefreshToken: async (token: string): Promise<void> => {
+    try {
+      if (Platform.OS === 'web') {
+        sessionStorage.setItem('refreshToken', token);
+      } else {
+        await SecureStore.setItemAsync('refreshToken', token);
+      }
+    } catch (e) {
+      console.error('Error saving refresh token', e);
+    }
+  },
+  removeRefreshToken: async (): Promise<void> => {
+    try {
+      if (Platform.OS === 'web') {
+        sessionStorage.removeItem('refreshToken');
+      } else {
+        await SecureStore.deleteItemAsync('refreshToken');
+      }
+    } catch (e) {
+      console.error('Error removing refresh token', e);
+    }
   }
 };
+
 
 export default storage;

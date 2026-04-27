@@ -40,7 +40,16 @@ namespace backend.DTOs
         public bool IsSuccess { get; set; }
         public string Message { get; set; } = string.Empty;
         public string? Token { get; set; }
+        public string? RefreshToken { get; set; }
         public IEnumerable<string>? Roles { get; set; }
         public IEnumerable<string>? Errors { get; set; }
+    }
+
+    public class TokenRequestDto
+    {
+        [Required]
+        public string AccessToken { get; set; } = string.Empty;
+        [Required]
+        public string RefreshToken { get; set; } = string.Empty;
     }
 }

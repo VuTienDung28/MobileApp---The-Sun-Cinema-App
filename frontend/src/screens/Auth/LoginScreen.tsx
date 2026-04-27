@@ -29,10 +29,11 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
     try {
       const response = await authService.login(email, password);
       if (response && response.isSuccess) {
-        const { token, roles } = response.data;
+        const { token, refreshToken, roles } = response.data;
         const role: UserRole = roles.includes('Admin') ? 'Admin' : 'User';
-        await signIn(token, role);
+        await signIn(token, refreshToken, role);
       } else {
+
         useAlertStore.getState().showAlert('Đăng nhập thất bại', response.message || 'Lỗi không xác định', { type: 'error' });
       }
     } catch (error: any) {
