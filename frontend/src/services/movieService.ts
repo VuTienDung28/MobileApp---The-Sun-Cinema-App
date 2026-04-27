@@ -50,7 +50,7 @@ const movieService = {
   },
 
   getMovieById: async (id: number): Promise<MovieDetail> => {
-    const response = await axiosClient.get(`/movie/${id}`);
+    const response = await axiosClient.get(`/movie/detail/${id}`);
     return response.data;
   },
 
@@ -121,12 +121,12 @@ const movieService = {
   },
 
   updateMovie: async (id: number, movieData: Partial<CreateMovieDto>): Promise<MovieDetail> => {
-    const response = await axiosClient.put(`/movie/${id}`, movieData);
+    const response = await axiosClient.put(`/movie/update/${id}`, movieData);
     return response.data;
   },
 
   deleteMovie: async (id: number): Promise<void> => {
-    await axiosClient.delete(`/movie/${id}`);
+    await axiosClient.delete(`/movie/delete/${id}`);
   },
 };
 

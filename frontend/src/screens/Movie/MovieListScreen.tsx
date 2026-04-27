@@ -4,11 +4,11 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  Image,
   TouchableOpacity,
   SafeAreaView,
   ActivityIndicator,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import movieService, { MovieListItem } from '../../services/movieService';
@@ -62,7 +62,13 @@ export default function MovieListScreen() {
       activeOpacity={0.7}
       onPress={() => navigation.navigate('MovieDetail', { movieId: item.id })}
     >
-      <Image source={{ uri: getImageUrl(item.thumbnailPosterUrl) }} style={styles.poster} />
+      <Image 
+        source={{ uri: getImageUrl(item.thumbnailPosterUrl) }} 
+        style={styles.poster} 
+        contentFit="cover"
+        transition={200}
+        cachePolicy="disk"
+      />
       
       <View style={styles.infoContainer}>
         <Text style={styles.title} numberOfLines={2}>{item.title.toUpperCase()}</Text>

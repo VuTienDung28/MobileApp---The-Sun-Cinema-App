@@ -8,7 +8,7 @@ namespace backend.Services.Interface
         /// Upload file lên storage. Trả về đường dẫn tương đối (relative path).
         /// VD: /avatar-images/user123_1714000000.jpg
         /// </summary>
-        Task<string> UploadAsync(IFormFile file, string bucketName, string objectKey);
+        Task<string> UploadAsync(IFormFile file, string bucketName, string objectKey, int? width = null, int? height = null);
 
         /// <summary>
         /// Xoá file theo đường dẫn tương đối.

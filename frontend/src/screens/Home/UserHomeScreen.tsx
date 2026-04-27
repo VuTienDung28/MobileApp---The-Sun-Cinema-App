@@ -6,8 +6,8 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
-  Image,
 } from "react-native";
+import { Image } from "expo-image";
 import { Ionicons, Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 
@@ -212,7 +212,13 @@ export default function UserHomeScreen() {
                   }
                 }}
                 >
-                  <Image source={{ uri: getImageUrl(item.thumbnailPosterUrl) }} style={styles.poster} />
+                  <Image 
+                    source={{ uri: getImageUrl(item.thumbnailPosterUrl) }} 
+                    style={styles.poster} 
+                    contentFit="cover"
+                    transition={200}
+                    cachePolicy="disk"
+                  />
                 </TouchableOpacity>
               ))}
             </ScrollView>

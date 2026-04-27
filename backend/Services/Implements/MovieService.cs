@@ -159,8 +159,8 @@ namespace backend.Services.Implements
 
             // Upload mới — lưu trong thư mục thumbnails/
             var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            var objectKey = $"thumbnails/{id}_{timestamp}.jpg";
-            var relativePath = await _storageService.UploadAsync(file, _minioOptions.MovieBucketName, objectKey);
+            var objectKey = $"thumbnails/{id}_{timestamp}.webp";
+            var relativePath = await _storageService.UploadAsync(file, _minioOptions.MovieBucketName, objectKey, 300, 450);
 
             movie.ThumbnailPosterUrl = relativePath;
             await _movieRepository.UpdateAsync(movie);
@@ -182,8 +182,8 @@ namespace backend.Services.Implements
 
             // Upload mới — lưu trong thư mục backdrops/
             var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            var objectKey = $"backdrops/{id}_{timestamp}.jpg";
-            var relativePath = await _storageService.UploadAsync(file, _minioOptions.MovieBucketName, objectKey);
+            var objectKey = $"backdrops/{id}_{timestamp}.webp";
+            var relativePath = await _storageService.UploadAsync(file, _minioOptions.MovieBucketName, objectKey, 1280, 720);
 
             movie.BackdropPosterUrl = relativePath;
             await _movieRepository.UpdateAsync(movie);

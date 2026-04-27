@@ -1,5 +1,6 @@
 import React from "react";
-import { ScrollView, Image, StyleSheet } from "react-native";
+import { ScrollView, StyleSheet } from "react-native";
+import { Image } from "expo-image";
 
 export default function MovieCarousel() {
     return (
@@ -7,14 +8,23 @@ export default function MovieCarousel() {
             <Image
                 source={{ uri: "https://picsum.photos/220/320?1" }}
                 style={styles.img}
+                contentFit="cover"
+                transition={200}
+                cachePolicy="disk"
             />
             <Image
                 source={{ uri: "https://picsum.photos/220/320?2" }}
                 style={styles.img}
+                contentFit="cover"
+                transition={200}
+                cachePolicy="disk"
             />
             <Image
                 source={{ uri: "https://picsum.photos/220/320?3" }}
                 style={styles.img}
+                contentFit="cover"
+                transition={200}
+                cachePolicy="disk"
             />
         </ScrollView>
     );

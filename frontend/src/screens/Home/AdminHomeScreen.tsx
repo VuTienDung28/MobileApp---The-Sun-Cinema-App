@@ -7,9 +7,9 @@ import {
   TouchableOpacity,
   Modal,
   ScrollView,
-  Image,
   Alert,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types';
@@ -120,6 +120,9 @@ const MovieCard: React.FC<{
       <Image 
         source={{ uri: getImageUrl(movie.thumbnailPosterUrl) || 'https://via.placeholder.com/60x90' }} 
         style={styles.movieThumbnail} 
+        contentFit="cover"
+        transition={200}
+        cachePolicy="disk"
       />
 
       <View style={styles.movieInfo}>
