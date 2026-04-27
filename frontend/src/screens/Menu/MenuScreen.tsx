@@ -52,7 +52,7 @@ export default function MenuScreen() {
                             />
                         }
                         title="Đặt vé theo Phim"
-                        onPress={() => navigation.navigate("Home")}
+                        onPress={() => navigation.navigate("MovieList")}
                     />
 
                     <MenuAction

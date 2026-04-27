@@ -11,80 +11,69 @@ import {
 import { Ionicons, Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 
+import movieService, { MovieListItem } from "../../services/movieService";
+import { ActivityIndicator } from "react-native";
+
 const { width } = Dimensions.get("window");
 
-const nowShowingMovies = [
-  {
-    id: 1,
-    title: "MƯA ĐỎ",
-    image: require("../../../assets/movies/muado.jpg"),
-    time: "2 giờ",
-    date: "22 Thg 8, 2025",
-  },
-  {
-    id: 2,
-    title: "PHI PHỔNG: QUỶ MẶT TRỜI",
-    image: require("../../../assets/movies/phiphong.jpg"),
-    time: "2 giờ",
-    date: "30 Thg 4, 2026",
-  },
-  {
-    id: 3,
-    title: "TÀI",
-    image: require("../../../assets/movies/tai.jpg"),
-    time: "1 giờ 50 phút",
-    date: "Mùa xuân 2026",
-  },
-];
+const getImageUrl = (url: string) => {
+  if (!url) return "https://via.placeholder.com/300x450";
+  if (url.startsWith("http")) return url;
+  const baseUrl = process.env.EXPO_PUBLIC_BASE_IP ? `http://${process.env.EXPO_PUBLIC_BASE_IP}:9000` : "http://localhost:9000";
+  return `${baseUrl}${url}`;
+};
 
-const specialMovies = [
-  {
-    id: 1,
-    title: "PHIM ĐẶC BIỆT",
-    image: require("../../../assets/movies/phiphong.jpg"),
-    time: "2 giờ",
-    date: "Suất chiếu đặc biệt",
-  },
-  {
-    id: 2,
-    title: "TÀI",
-    image: require("../../../assets/movies/tai.jpg"),
-    time: "1 giờ 50 phút",
-    date: "Vé ưu đãi",
-  },
-];
+const formatDuration = (minutes: number) => {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h > 0 && m > 0) return `${h} giờ ${m} phút`;
+  if (h > 0) return `${h} giờ`;
+  return `${m} phút`;
+};
 
-const comingSoonMovies = [
-  {
-    id: 1,
-    title: "TÀI",
-    image: require("../../../assets/movies/tai.jpg"),
-    time: "1 giờ 50 phút",
-    date: "Mùa xuân 2026",
-  },
-  {
-    id: 2,
-    title: "MƯA ĐỎ",
-    image: require("../../../assets/movies/muado.jpg"),
-    time: "2 giờ",
-    date: "Sắp chiếu",
-  },
-];
+const formatDate = (dateString: string) => {
+  if (!dateString) return "Sắp chiếu";
+  const date = new Date(dateString);
+  const day = date.getDate();
+  const month = date.getMonth() + 1;
+  const year = date.getFullYear();
+  return `${day} Thg ${month}, ${year}`;
+};
 
 export default function UserHomeScreen() {
   const navigation = useNavigation<any>();
 
   const [activeTab, setActiveTab] = useState("Đang chiếu");
   const [activeIndex, setActiveIndex] = useState(0);
+  const [movies, setMovies] = useState<MovieListItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const movies =
-    activeTab === "Đang chiếu"
-      ? nowShowingMovies
-      : activeTab === "Đặc biệt"
-        ? specialMovies
-        : comingSoonMovies;
+  const fetchMovies = async (tab: string) => {
+    setIsLoading(true);
+    try {
+      let data: MovieListItem[] = [];
+      if (tab === "Đang chiếu") {
+        data = await movieService.getNowShowing();
+      } else {
+        data = await movieService.getComingSoon();
+      }
+      console.log(`[UserHome] Loaded ${data.length} movies for tab: ${tab}`);
+      if (data.length > 0) {
+        console.log(`[UserHome] Sample movie: ${data[0].title}, Date: ${data[0].releaseDate}`);
+      }
+      setMovies(data);
+    } catch (error) {
+      console.error("Error fetching movies:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const activeMovie = movies[activeIndex] || movies[0];
+  React.useEffect(() => {
+    fetchMovies(activeTab);
+  }, [activeTab]);
+
+  const activeMovie = movies[activeIndex];
 
   const changeTab = (tab: string) => {
     setActiveTab(tab);
@@ -149,7 +138,7 @@ export default function UserHomeScreen() {
 
           <View style={styles.tabs}>
             <TouchableOpacity
-              style={[styles.tab, activeTab === "Đang chiếu" && styles.tabActive]}
+              style={[styles.tab, activeTab === "Đang chiếu" && styles.tabActive, { flex: 1 }]}
               onPress={() => changeTab("Đang chiếu")}
             >
               <Ionicons
@@ -169,27 +158,7 @@ export default function UserHomeScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.tab, activeTab === "Đặc biệt" && styles.tabActive]}
-              onPress={() => changeTab("Đặc biệt")}
-            >
-              <Ionicons
-                name="star-outline"
-                size={18}
-                color={activeTab === "Đặc biệt" ? "#fff" : "#4A2C13"}
-              />
-              <Text
-                style={
-                  activeTab === "Đặc biệt"
-                    ? styles.tabActiveText
-                    : styles.tabText
-                }
-              >
-                Đặc biệt
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.tab, activeTab === "Sắp chiếu" && styles.tabActive]}
+              style={[styles.tab, activeTab === "Sắp chiếu" && styles.tabActive, { flex: 1, marginLeft: 10 }]}
               onPress={() => changeTab("Sắp chiếu")}
             >
               <Ionicons
@@ -209,58 +178,78 @@ export default function UserHomeScreen() {
             </TouchableOpacity>
           </View>
 
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            snapToInterval={width * 0.62}
-            decelerationRate="fast"
-            contentContainerStyle={styles.movieRow}
-            onMomentumScrollEnd={(e) => {
-              const index = Math.round(
-                e.nativeEvent.contentOffset.x / (width * 0.62)
-              );
-
-              setActiveIndex(Math.max(0, Math.min(index, movies.length - 1)));
-            }}
-          >
-            {movies.map((item, index) => (
-              <TouchableOpacity
-                activeOpacity={0.8}
-                key={`${activeTab}-${item.id}`}
-                style={[
-                  styles.movieCard,
-                  activeIndex === index && styles.movieCardActive,
-                ]}
-                onPress={() => setActiveIndex(index)}
-              >
-                <Image source={item.image} style={styles.poster} />
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-          <View style={styles.infoBox}>
-            <View style={{ flex: 1 }}>
-              <Text numberOfLines={1} style={styles.movieTitle}>
-                {activeMovie.title}
-              </Text>
-
-              <View style={styles.metaRow}>
-                <Ionicons name="time-outline" size={18} color="#4A2C13" />
-                <Text style={styles.meta}>{activeMovie.time}</Text>
-
-                <Text style={styles.divide}>|</Text>
-
-                <Ionicons name="calendar-outline" size={18} color="#4A2C13" />
-                <Text numberOfLines={1} style={styles.meta}>
-                  {activeMovie.date}
-                </Text>
-              </View>
+          {isLoading ? (
+            <View style={{ height: 340, justifyContent: 'center' }}>
+              <ActivityIndicator size="large" color="#FFB800" />
             </View>
+          ) : movies.length > 0 ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              snapToInterval={width * 0.62}
+              decelerationRate="fast"
+              contentContainerStyle={styles.movieRow}
+              onMomentumScrollEnd={(e) => {
+                const index = Math.round(
+                  e.nativeEvent.contentOffset.x / (width * 0.62)
+                );
+                setActiveIndex(Math.max(0, Math.min(index, movies.length - 1)));
+              }}
+            >
+              {movies.map((item, index) => (
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  key={`${activeTab}-${item.id}`}
+                  style={[
+                    styles.movieCard,
+                    activeIndex === index && styles.movieCardActive,
+                  ]}
+                  onPress={() => {
+                  if (activeIndex === index) {
+                    navigation.navigate('MovieDetail', { movieId: item.id });
+                  } else {
+                    setActiveIndex(index);
+                  }
+                }}
+                >
+                  <Image source={{ uri: getImageUrl(item.thumbnailPosterUrl) }} style={styles.poster} />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          ) : (
+            <View style={{ height: 340, justifyContent: 'center', alignItems: 'center' }}>
+              <Text style={{ color: '#4A2C13', opacity: 0.6 }}>Chưa có phim nào</Text>
+            </View>
+          )}
 
-            <TouchableOpacity style={styles.bookBtn}>
-              <Text style={styles.bookText}>Đặt Vé</Text>
-            </TouchableOpacity>
-          </View>
+          {activeMovie && (
+            <View style={styles.infoBox}>
+              <View style={{ flex: 1 }}>
+                <Text numberOfLines={1} style={styles.movieTitle}>
+                  {activeMovie.title}
+                </Text>
+
+                <View style={styles.metaRow}>
+                  <Ionicons name="time-outline" size={18} color="#4A2C13" />
+                  <Text style={styles.meta}>{formatDuration(activeMovie.duration)}</Text>
+
+                  <Text style={styles.divide}>|</Text>
+
+                  <Ionicons name="calendar-outline" size={18} color="#4A2C13" />
+                  <Text numberOfLines={1} style={styles.meta}>
+                    {formatDate(activeMovie.releaseDate)}
+                  </Text>
+                </View>
+              </View>
+
+              <TouchableOpacity 
+                style={styles.bookBtn}
+                onPress={() => navigation.navigate('MovieDetail', { movieId: activeMovie.id })}
+              >
+                <Text style={styles.bookText}>Đặt Vé</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           <TouchableOpacity style={styles.supportBox}>
             <Text style={styles.supportEmoji}>🌻</Text>

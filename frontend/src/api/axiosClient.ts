@@ -3,9 +3,6 @@ import storage from '../utils/storage';
 import useAuthStore from '../store/useAuthStore';
 const axiosClient = axios.create({
   baseURL: process.env.EXPO_PUBLIC_API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 axiosClient.interceptors.request.use(
   async (config) => {

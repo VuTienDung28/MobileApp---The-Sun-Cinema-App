@@ -9,9 +9,10 @@ import {
   ScrollView,
   Alert,
   Keyboard,
-  TouchableWithoutFeedback,
   Platform,
   Image,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -19,24 +20,29 @@ import { RootStackParamList } from '../../types';
 import * as ImagePicker from 'expo-image-picker';
 import { Video, ResizeMode } from 'expo-av';
 
+import movieService from '../../services/movieService';
+import useAlertStore from '../../store/useAlertStore';
+
 type Props = NativeStackScreenProps<RootStackParamList, 'AddMovie'>;
 
 const AddMovieScreen: React.FC<Props> = ({ navigation }) => {
   const [movieTitle, setMovieTitle] = useState('');
   const [genre, setGenre] = useState('');
   const [director, setDirector] = useState('');
+  const [actors, setActors] = useState('');
   const [duration, setDuration] = useState('');
   const [releaseDate, setReleaseDate] = useState('');
   const [description, setDescription] = useState('');
-  const [price, setPrice] = useState('');
+  const [ageRestriction, setAgeRestriction] = useState('P');
+  const [language, setLanguage] = useState('Tiếng Việt');
   
   // State cho ảnh và video
   const [posterImage, setPosterImage] = useState<string | null>(null);
-  const [trailerVideo, setTrailerVideo] = useState<string | null>(null);
+  const [backdropImage, setBackdropImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   // Hàm chọn ảnh từ thư viện
-  const pickImage = async () => {
+  const pickImage = async (type: 'poster' | 'backdrop') => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     
     if (status !== 'granted') {
@@ -47,17 +53,18 @@ const AddMovieScreen: React.FC<Props> = ({ navigation }) => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      aspect: [2, 3],
+      aspect: type === 'poster' ? [2, 3] : [16, 9],
       quality: 0.8,
     });
 
     if (!result.canceled) {
-      setPosterImage(result.assets[0].uri);
+      if (type === 'poster') setPosterImage(result.assets[0].uri);
+      else setBackdropImage(result.assets[0].uri);
     }
   };
 
   // Hàm chụp ảnh mới
-  const takePhoto = async () => {
+  const takePhoto = async (type: 'poster' | 'backdrop') => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     
     if (status !== 'granted') {
@@ -67,99 +74,108 @@ const AddMovieScreen: React.FC<Props> = ({ navigation }) => {
 
     const result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
-      aspect: [2, 3],
+      aspect: type === 'poster' ? [2, 3] : [16, 9],
       quality: 0.8,
     });
 
     if (!result.canceled) {
-      setPosterImage(result.assets[0].uri);
+      if (type === 'poster') setPosterImage(result.assets[0].uri);
+      else setBackdropImage(result.assets[0].uri);
     }
   };
 
-  // Hàm chọn video trailer
-  const pickVideo = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
-    if (status !== 'granted') {
-      Alert.alert('Lỗi', 'Bạn cần cấp quyền truy cập thư viện');
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
-      allowsEditing: true,
-      quality: 0.8,
-    });
-
-    if (!result.canceled) {
-      setTrailerVideo(result.assets[0].uri);
-    }
-  };
-
-  // Hàm xóa ảnh
-  const removeImage = () => {
-    setPosterImage(null);
-  };
-
-  // Hàm xóa video
-  const removeVideo = () => {
-    setTrailerVideo(null);
-  };
+  // Hàm chọn video trailer - Đã bỏ vì không có trong DB
 
   // Menu chọn ảnh
-  const showImageOptions = () => {
+  const showImageOptions = (type: 'poster' | 'backdrop') => {
+    if (Platform.OS === 'web') {
+      // Trên Web, Alert.alert với nhiều nút không hỗ trợ tốt, mở trực tiếp thư viện ảnh
+      pickImage(type);
+      return;
+    }
     Alert.alert(
-      'Chọn ảnh poster',
+      type === 'poster' ? 'Chọn ảnh poster' : 'Chọn ảnh nền (Backdrop)',
       'Bạn muốn chọn ảnh từ đâu?',
       [
         { text: 'Hủy', style: 'cancel' },
-        { text: 'Chụp ảnh mới', onPress: takePhoto },
-        { text: 'Chọn từ thư viện', onPress: pickImage },
+        { text: 'Chụp ảnh mới', onPress: () => takePhoto(type) },
+        { text: 'Chọn từ thư viện', onPress: () => pickImage(type) },
       ]
     );
   };
 
   const handleAddMovie = async () => {
     Keyboard.dismiss();
+    console.log('Add Movie Clicked');
     
-    if (!movieTitle || !genre || !director || !duration || !releaseDate || !price) {
-      Alert.alert('Lỗi', 'Vui lòng điền đầy đủ thông tin bắt buộc');
+    if (!movieTitle || !genre || !director || !duration || !releaseDate || !description) {
+      console.log('Validation failed: missing fields');
+      useAlertStore.getState().showAlert('Thiếu thông tin', 'Vui lòng điền đầy đủ thông tin bắt buộc', { type: 'warning' });
+      return;
+    }
+
+    // Kiểm tra định dạng ngày DD/MM/YYYY
+    const dateParts = releaseDate.split('/');
+    if (dateParts.length !== 3) {
+      useAlertStore.getState().showAlert('Định dạng sai', 'Ngày chiếu không đúng định dạng DD/MM/YYYY', { type: 'warning' });
       return;
     }
 
     setIsLoading(true);
+    console.log('Starting Add Movie API call...');
     
-    setTimeout(() => {
-      const newMovie = {
-        id: Date.now().toString(),
+    try {
+      // 1. Tạo phim
+      const newMovie = await movieService.createMovie({
         title: movieTitle,
-        genre: genre,
+        movieGenre: genre,
         director: director,
+        movieActors: actors,
         duration: parseInt(duration),
-        releaseDate: releaseDate,
+        releaseDate: new Date(releaseDate.split('/').reverse().join('-')).toISOString(), 
         description: description,
-        price: parseInt(price),
-        posterUrl: posterImage,
-        trailerUrl: trailerVideo,
-        ticketsSold: 0,
-        revenue: 0,
-        trend: 'up',
-      };
+        ageRestriction,
+        language,
+      } as any); 
+
+      console.log('Created Movie:', newMovie);
+
+      // 2. Upload poster nếu có
+      if (posterImage && newMovie.id) {
+        try {
+          await movieService.uploadThumbnail(newMovie.id, posterImage);
+        } catch (e) {
+          console.error('Error uploading poster:', e);
+        }
+      }
+
+      // 3. Upload backdrop nếu có
+      if (backdropImage && newMovie.id) {
+        try {
+          await movieService.uploadBackdrop(newMovie.id, backdropImage);
+        } catch (e) {
+          console.error('Error uploading backdrop:', e);
+        }
+      }
       
-      console.log('New Movie:', newMovie);
-      
-      Alert.alert(
-        'Thành công',
-        'Phim đã được thêm thành công!',
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
-      );
-      
+      useAlertStore.getState().showAlert('Thành công', 'Phim đã được thêm thành công!', {
+        type: 'success',
+        buttons: [{ text: 'OK', onPress: () => navigation.goBack() }]
+      });
+    } catch (error: any) {
+      console.error('Error adding movie:', error);
+      useAlertStore.getState().showAlert('Lỗi', error.message || 'Không thể thêm phim', { type: 'error' });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const Content = (
     <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity 
@@ -179,65 +195,57 @@ const AddMovieScreen: React.FC<Props> = ({ navigation }) => {
       >
         <View style={styles.card}>
           
-          {/* Phần thêm ảnh poster */}
-          <Text style={styles.sectionTitle}>Ảnh Poster</Text>
-          <TouchableOpacity 
-            style={styles.imageUploadContainer} 
-            onPress={showImageOptions}
-          >
-            {posterImage ? (
-              <View style={styles.imagePreviewContainer}>
-                <Image source={{ uri: posterImage }} style={styles.posterImage} />
-                <TouchableOpacity 
-                  style={styles.removeButton} 
-                  onPress={removeImage}
-                >
-                  <Ionicons name="close-circle" size={28} color="#FF6B6B" />
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <View style={styles.uploadPlaceholder}>
-                <Ionicons name="cloud-upload-outline" size={50} color="#FFCC00" />
-                <Text style={styles.uploadText}>Chạm để thêm ảnh poster</Text>
-                <Text style={styles.uploadSubText}>Hỗ trợ JPG, PNG, JPEG</Text>
-              </View>
-            )}
-          </TouchableOpacity>
+          {/* Preview Layout - Giao diện chi tiết phim */}
+          <Text style={styles.sectionTitle}>Giao diện hiển thị (Preview)</Text>
+          <View style={styles.previewContainer}>
+            {/* Backdrop */}
+            <TouchableOpacity 
+              style={styles.backdropPlaceholder} 
+              onPress={() => showImageOptions('backdrop')}
+              activeOpacity={0.9}
+            >
+              {backdropImage ? (
+                <Image source={{ uri: backdropImage }} style={styles.backdropImageFull} />
+              ) : (
+                <View style={styles.emptyBackdrop}>
+                  <Ionicons name="image-outline" size={40} color="#8A7851" />
+                  <Text style={styles.emptyText}>Thêm ảnh nền (16:9)</Text>
+                </View>
+              )}
+            </TouchableOpacity>
 
-          {/* Phần thêm trailer */}
-          <Text style={styles.sectionTitle}>Trailer Phim</Text>
-          <TouchableOpacity 
-            style={styles.videoUploadContainer} 
-            onPress={pickVideo}
-          >
-            {trailerVideo ? (
-              <View style={styles.videoPreviewContainer}>
-                <Video
-                  source={{ uri: trailerVideo }}
-                  rate={1.0}
-                  volume={1.0}
-                  isMuted={false}
-                  resizeMode={ResizeMode.CONTAIN}
-                  shouldPlay={false}
-                  isLooping={false}
-                  useNativeControls
-                  style={styles.trailerVideo}
-                />
-                <TouchableOpacity 
-                  style={styles.removeButton} 
-                  onPress={removeVideo}
-                >
-                  <Ionicons name="close-circle" size={28} color="#FF6B6B" />
-                </TouchableOpacity>
+            {/* Poster Overlay */}
+            <View style={styles.posterOverlayWrap}>
+              <TouchableOpacity 
+                style={styles.posterPlaceholder} 
+                onPress={() => showImageOptions('poster')}
+                activeOpacity={0.9}
+              >
+                {posterImage ? (
+                  <Image source={{ uri: posterImage }} style={styles.posterImageOverlay} />
+                ) : (
+                  <View style={styles.emptyPoster}>
+                    <Ionicons name="add" size={24} color="#FFCC00" />
+                    <Text style={styles.emptyPosterText}>Poster</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+
+              <View style={styles.movieBasicInfo}>
+                <Text style={styles.previewTitle} numberOfLines={1}>
+                  {movieTitle || 'Tên phim'}
+                </Text>
+                <View style={styles.previewMeta}>
+                  <Text style={styles.previewMetaText}>📅 {releaseDate || 'Ngày chiếu'}</Text>
+                  <Text style={styles.previewMetaText}> ⏱️ {duration || '0'} phút</Text>
+                </View>
+                <View style={styles.previewReaction}>
+                   <Ionicons name="heart" size={16} color="#FF6B6B" />
+                   <Text style={styles.previewReactionText}> 0</Text>
+                </View>
               </View>
-            ) : (
-              <View style={styles.uploadPlaceholder}>
-                <Ionicons name="videocam-outline" size={50} color="#FFCC00" />
-                <Text style={styles.uploadText}>Chạm để thêm trailer</Text>
-                <Text style={styles.uploadSubText}>Hỗ trợ MP4, MOV, AVI</Text>
-              </View>
-            )}
-          </TouchableOpacity>
+            </View>
+          </View>
 
           <Text style={styles.sectionTitle}>Thông tin cơ bản</Text>
           
@@ -265,7 +273,6 @@ const AddMovieScreen: React.FC<Props> = ({ navigation }) => {
             />
           </View>
 
-          {/* Director */}
           <View style={styles.inputWrapper}>
             <Ionicons name="person-outline" size={20} color="#FFCC00" style={styles.inputIcon} />
             <TextInput
@@ -274,6 +281,17 @@ const AddMovieScreen: React.FC<Props> = ({ navigation }) => {
               placeholderTextColor="#BDBDBD"
               value={director}
               onChangeText={setDirector}
+            />
+          </View>
+
+          <View style={styles.inputWrapper}>
+            <Ionicons name="people-outline" size={20} color="#FFCC00" style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Diễn viên (cách nhau bởi dấu phẩy)"
+              placeholderTextColor="#BDBDBD"
+              value={actors}
+              onChangeText={setActors}
             />
           </View>
 
@@ -304,16 +322,27 @@ const AddMovieScreen: React.FC<Props> = ({ navigation }) => {
             />
           </View>
 
-          {/* Price */}
+          {/* Age Restriction */}
           <View style={styles.inputWrapper}>
-            <Ionicons name="cash-outline" size={20} color="#FFCC00" style={styles.inputIcon} />
+            <Ionicons name="shield-checkmark-outline" size={20} color="#FFCC00" style={styles.inputIcon} />
             <TextInput
               style={styles.input}
-              placeholder="Giá vé * (VND)"
+              placeholder="Giới hạn độ tuổi (VD: P, T13, T16, T18)"
               placeholderTextColor="#BDBDBD"
-              keyboardType="numeric"
-              value={price}
-              onChangeText={setPrice}
+              value={ageRestriction}
+              onChangeText={setAgeRestriction}
+            />
+          </View>
+
+          {/* Language */}
+          <View style={styles.inputWrapper}>
+            <Ionicons name="language-outline" size={20} color="#FFCC00" style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Ngôn ngữ (VD: Tiếng Việt, Phụ đề...)"
+              placeholderTextColor="#BDBDBD"
+              value={language}
+              onChangeText={setLanguage}
             />
           </View>
 
@@ -322,7 +351,7 @@ const AddMovieScreen: React.FC<Props> = ({ navigation }) => {
             <Ionicons name="document-text-outline" size={20} color="#FFCC00" style={[styles.inputIcon, styles.textAreaIcon]} />
             <TextInput
               style={[styles.input, styles.textArea]}
-              placeholder="Mô tả phim"
+              placeholder="Mô tả phim *"
               placeholderTextColor="#BDBDBD"
               multiline
               numberOfLines={4}
@@ -345,8 +374,12 @@ const AddMovieScreen: React.FC<Props> = ({ navigation }) => {
               </>
             )}
           </TouchableOpacity>
+          
+          {/* Extra padding for keyboard */}
+          <View style={{ height: 40 }} />
         </View>
       </ScrollView>
+    </KeyboardAvoidingView>
     </SafeAreaView>
   );
 
@@ -410,33 +443,60 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     marginTop: 8,
   },
-  imageUploadContainer: {
+  imageUploadContainer: { marginBottom: 20 },
+  previewContainer: {
+    backgroundColor: '#1A1A2E',
+    borderRadius: 16,
+    overflow: 'hidden',
     marginBottom: 20,
+    height: 260,
   },
-  videoUploadContainer: {
-    marginBottom: 20,
-  },
-  posterImage: {
+  backdropPlaceholder: {
     width: '100%',
-    height: 300,
-    borderRadius: 12,
-    resizeMode: 'cover',
+    height: 180,
+    backgroundColor: '#2A2A40',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  trailerVideo: {
-    width: '100%',
-    height: 200,
-    borderRadius: 12,
+  backdropImageFull: { width: '100%', height: '180%', resizeMode: 'cover' },
+  emptyBackdrop: { alignItems: 'center' },
+  emptyText: { color: '#8A7851', marginTop: 8, fontSize: 12 },
+  
+  posterOverlayWrap: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    marginTop: -60,
+    alignItems: 'flex-end',
+    gap: 16,
   },
-  imagePreviewContainer: {
-    position: 'relative',
-    width: '100%',
-    height: 300,
+  posterPlaceholder: {
+    width: 100,
+    height: 140,
+    backgroundColor: '#333',
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#FFF',
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  videoPreviewContainer: {
-    position: 'relative',
-    width: '100%',
-    height: 200,
-  },
+  posterImageOverlay: { width: '100%', height: '100%', resizeMode: 'cover' },
+  emptyPoster: { alignItems: 'center' },
+  emptyPosterText: { color: '#FFCC00', fontSize: 10, fontWeight: '700' },
+
+  movieBasicInfo: { flex: 1, paddingBottom: 10 },
+  previewTitle: { color: '#FFF', fontSize: 18, fontWeight: '800', marginBottom: 4 },
+  previewMeta: { flexDirection: 'row', gap: 10, marginBottom: 4 },
+  previewMetaText: { color: '#BBB', fontSize: 12 },
+  previewReaction: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  previewReactionText: { color: '#FF6B6B', fontSize: 14, fontWeight: '700' },
+
+  posterImage: { width: '100%', height: 300, borderRadius: 12, resizeMode: 'cover' },
+  backdropImage: { width: '100%', height: 180, borderRadius: 12, resizeMode: 'cover' },
+  trailerVideo: { width: '100%', height: 200, borderRadius: 12 },
+  imagePreviewContainer: { position: 'relative', width: '100%', height: 300 },
+  backdropPreviewContainer: { position: 'relative', width: '100%', height: 180 },
+  videoPreviewContainer: { position: 'relative', width: '100%', height: 200 },
   removeButton: {
     position: 'absolute',
     top: 10,
@@ -444,6 +504,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 15,
     overflow: 'hidden',
+    zIndex: 10,
   },
   uploadPlaceholder: {
     borderWidth: 2,

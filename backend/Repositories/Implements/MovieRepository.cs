@@ -31,12 +31,16 @@ namespace backend.Repositories.Implements
         // =============================================
         public async Task<IEnumerable<Movie>> GetNowShowingAsync()
         {
-            var now = DateTime.UtcNow;
-            var cutoff = now.AddDays(7);
+            // Lấy thời điểm hiện tại theo giờ Việt Nam
+            var nowVN = DateTime.UtcNow.AddHours(7);
+            var today = nowVN.Date;
+            var startRange = today.AddDays(-20);
+            var endRange = today.AddDays(1).AddTicks(-1); // Hết ngày hôm nay
 
+            // Phim ra mắt trong vòng 20 ngày qua tính đến hết ngày hôm nay
             return await _db.Movies
                 .AsNoTracking()
-                .Where(m => m.Showtimes.Any(s => s.StartTime >= now && s.StartTime <= cutoff))
+                .Where(m => m.ReleaseDate <= endRange && m.ReleaseDate >= startRange)
                 .OrderByDescending(m => m.ReleaseDate)
                 .ToListAsync();
         }
@@ -47,9 +51,13 @@ namespace backend.Repositories.Implements
         // =============================================
         public async Task<IEnumerable<Movie>> GetComingSoonAsync()
         {
+            var nowVN = DateTime.UtcNow.AddHours(7);
+            var endOfToday = nowVN.Date.AddDays(1); // Bắt đầu từ ngày mai
+
+            // Phim có ngày phát hành từ ngày mai trở đi
             return await _db.Movies
                 .AsNoTracking()
-                .Where(m => !m.Showtimes.Any())
+                .Where(m => m.ReleaseDate >= endOfToday)
                 .OrderBy(m => m.ReleaseDate)
                 .ToListAsync();
         }

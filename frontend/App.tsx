@@ -10,10 +10,13 @@ import RegisterScreen from './src/screens/Auth/RegisterScreen';
 import AdminHomeScreen from './src/screens/Home/AdminHomeScreen';
 import UserHomeScreen from './src/screens/Home/UserHomeScreen'; // Có thể bỏ đi nếu MainTabNavigator đã bao gồm màn hình này
 import ProfileScreen from './src/screens/Profile/ProfileScreen';
+import MovieDetailScreen from './src/screens/Movie/MovieDetailScreen';
+import MovieListScreen from './src/screens/Movie/MovieListScreen';
 
-// Các màn hình được thêm từ nhánh của người thứ nhất
-import AddMovieScreen from './src/screens/Home/AddMovieScreen';  
-import AddTheaterScreen from './src/screens/Home/AddTheaterScreen';
+// Các màn hình quản lý dành cho Admin
+import AddMovieScreen from './src/screens/AdminManageScreens/AddMovieScreen';  
+import EditMovieScreen from './src/screens/AdminManageScreens/EditMovieScreen';
+import AddTheaterScreen from './src/screens/AdminManageScreens/AddTheaterScreen';
 
 // Imports store, components & types
 import useAuthStore from './src/store/useAuthStore';
@@ -50,13 +53,17 @@ export default function App() {
                 <>
                     <Stack.Screen name="AdminHome" component={AdminHomeScreen} />
                     <Stack.Screen name="AddMovie" component={AddMovieScreen} />
-                    <Stack.Screen name="AddTheater" component={AddTheaterScreen} />
+                    <Stack.Screen name="EditMovie" component={EditMovieScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="MovieDetail" component={MovieDetailScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="AddTheater" component={AddTheaterScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="Profile" component={ProfileScreen} />
                 </>
             ) : (
                 // Nhóm màn hình dành cho User
                 <>
                     <Stack.Screen name="UserHome" component={MainTabNavigator} />
+                    <Stack.Screen name="MovieDetail" component={MovieDetailScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="MovieList" component={MovieListScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="Profile" component={ProfileScreen} />
                 </>
             )}

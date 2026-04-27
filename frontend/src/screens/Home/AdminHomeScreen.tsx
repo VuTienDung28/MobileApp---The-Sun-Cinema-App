@@ -7,31 +7,42 @@ import {
   TouchableOpacity,
   Modal,
   ScrollView,
+  Image,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types';
 import useAuthStore from '../../store/useAuthStore';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'AdminHome'>;
+import movieService, { MovieListItem } from '../../services/movieService';
+import useAlertStore from '../../store/useAlertStore';
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
-const MOVIES = [
-  { id: '1', title: 'Avengers: Doomsday', genre: 'Action', ticketsSold: 4821, revenue: 144630000, trend: 'up' },
-  { id: '2', title: 'Lilo & Stitch', genre: 'Animation', ticketsSold: 3612, revenue: 108360000, trend: 'up' },
-  { id: '3', title: 'Mission: Impossible 8', genre: 'Thriller', ticketsSold: 2974, revenue: 89220000, trend: 'down' },
-  { id: '4', title: 'Minecraft Movie', genre: 'Adventure', ticketsSold: 2543, revenue: 76290000, trend: 'up' },
-  { id: '5', title: 'Snow White', genre: 'Fantasy', ticketsSold: 1897, revenue: 56910000, trend: 'down' },
-  { id: '6', title: 'How to Train Your Dragon', genre: 'Animation', ticketsSold: 1654, revenue: 49620000, trend: 'up' },
-];
+type Props = NativeStackScreenProps<RootStackParamList, 'AdminHome'>;
 
 const GENRE_COLORS: Record<string, string> = {
   Action: '#FF6B6B',
+  'Hành động': '#FF6B6B',
   Animation: '#4ECDC4',
+  'Hoạt hình': '#4ECDC4',
   Thriller: '#A78BFA',
+  'Hồi hộp': '#A78BFA',
   Adventure: '#F59E0B',
+  'Phiêu lưu': '#F59E0B',
   Fantasy: '#60A5FA',
+  'Viễn tưởng': '#60A5FA',
   Horror: '#F97316',
+  'Kinh dị': '#F97316',
+  'Tình cảm': '#F06292',
+  'Hài hước': '#FFD54F',
+};
+
+// Helper function to get image URL
+const getImageUrl = (url: string) => {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  const baseUrl = process.env.EXPO_PUBLIC_BASE_IP ? `http://${process.env.EXPO_PUBLIC_BASE_IP}:9000` : 'http://localhost:9000';
+  return `${baseUrl}${url}`;
 };
 
 // ─── Dropdown Menu Component ───────────────────────────────────────────────────
@@ -95,40 +106,54 @@ const AvatarDropdown: React.FC<{
 
 // ─── Movie Card Component ─────────────────────────────────────────────────────
 const MovieCard: React.FC<{
-  movie: (typeof MOVIES)[0];
+  movie: MovieListItem;
   rank: number;
-}> = ({ movie, rank }) => {
-  const genreColor = GENRE_COLORS[movie.genre] ?? '#888';
+  navigation: any;
+  onDelete: (id: number, title: string) => void;
+}> = ({ movie, rank, navigation, onDelete }) => {
+  const genreColor = GENRE_COLORS[movie.movieGenre] ?? '#888';
   const isTop3 = rank <= 3;
 
   return (
     <View style={[styles.movieCard, isTop3 && styles.movieCardTop]}>
-      <View style={[styles.rankBadge, isTop3 && { backgroundColor: genreColor }]}>
-        <Text style={[styles.rankText, isTop3 && styles.rankTextTop]}>#{rank}</Text>
-      </View>
+      {/* Thumbnail thay cho Rank */}
+      <Image 
+        source={{ uri: getImageUrl(movie.thumbnailPosterUrl) || 'https://via.placeholder.com/60x90' }} 
+        style={styles.movieThumbnail} 
+      />
 
       <View style={styles.movieInfo}>
         <Text style={styles.movieTitle} numberOfLines={1}>{movie.title}</Text>
-        <View style={styles.movieMeta}>
+        <View style={styles.infoRow}>
           <View style={[styles.genreTag, { backgroundColor: genreColor + '22', borderColor: genreColor + '55' }]}>
-            <Text style={[styles.genreText, { color: genreColor }]}>{movie.genre}</Text>
+            <Text style={[styles.genreText, { color: genreColor }]}>{movie.movieGenre}</Text>
+          </View>
+          
+          {/* Reaction di chuyển sang trái */}
+          <View style={styles.reactionMini}>
+            <Ionicons name="heart" size={14} color="#FF6B6B" />
+            <Text style={styles.reactionMiniText}>{movie.totalReactions}</Text>
           </View>
         </View>
       </View>
 
-      <View style={styles.ticketBlock}>
-        <View style={styles.ticketRow}>
-          <Ionicons
-            name={movie.trend === 'up' ? 'trending-up' : 'trending-down'}
-            size={14}
-            color={movie.trend === 'up' ? '#4ECDC4' : '#FF6B6B'}
-          />
-          <Text style={[styles.trendText, { color: movie.trend === 'up' ? '#4ECDC4' : '#FF6B6B' }]}>
-            {movie.trend === 'up' ? '+' : '-'}
-          </Text>
-        </View>
-        <Text style={styles.ticketCount}>{movie.ticketsSold.toLocaleString()}</Text>
-        <Text style={styles.ticketLabel}>tickets sold</Text>
+      {/* Nhóm nút Sửa & Xóa */}
+      <View style={styles.actionGroup}>
+        <TouchableOpacity 
+          style={styles.editButton}
+          onPress={() => navigation.navigate('EditMovie', { movie })}
+        >
+          <Ionicons name="create-outline" size={20} color="#FFCC00" />
+          <Text style={styles.editText}>Sửa</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.deleteButton}
+          onPress={() => onDelete(movie.id, movie.title)}
+        >
+          <Ionicons name="trash-outline" size={20} color="#FF6B6B" />
+          <Text style={styles.deleteText}>Xóa</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -137,29 +162,78 @@ const MovieCard: React.FC<{
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 const AdminHomeScreen: React.FC<Props> = ({ navigation }) => {
   const [dropdownVisible, setDropdownVisible] = useState(false);
-  const [movies, setMovies] = useState(MOVIES);
+  const [movies, setMovies] = useState<MovieListItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const signOut = useAuthStore(state => state.signOut);
 
-  const totalTickets = movies.reduce((sum, m) => sum + m.ticketsSold, 0);
-  const totalRevenue = movies.reduce((sum, m) => sum + m.revenue, 0);
+  const fetchMovies = async () => {
+    try {
+      setIsLoading(true);
+      const data = await movieService.getAllMovies();
+      setMovies(data);
+    } catch (error) {
+      console.error('Error fetching movies:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchMovies();
+    });
+    return unsubscribe;
+  }, [navigation]);
+
+  // Hiện tại chưa có API thống kê thật, nên ta dùng tạm dữ liệu từ danh sách phim
+  const totalTickets = movies.reduce((sum, m) => sum + m.totalReactions, 0); // Tạm lấy reactions làm ticket sold
+  const totalRevenue = totalTickets * 75000; // Giả định giá vé trung bình
 
   const handleNavigate = (screen: string) => {
-  if (screen === 'MovieManagement') {
-    navigation.navigate('AddMovie' as never);
-  } else if (screen === 'TheaterManagement') {
-    navigation.navigate('AddTheater' as never);  
-  } else {
-    try {
-      (navigation.navigate as (s: string) => void)(screen);
-    } catch {
-      console.log(`Navigate to: ${screen}`);
+    if (screen === 'MovieManagement') {
+      navigation.navigate('AddMovie' as never);
+    } else if (screen === 'TheaterManagement') {
+      navigation.navigate('AddTheater' as never);  
+    } else {
+      try {
+        (navigation.navigate as (s: string) => void)(screen);
+      } catch {
+        console.log(`Navigate to: ${screen}`);
+      }
     }
-  }
-};
+  };
 
   const handleLogout = async () => {
     await signOut();
     navigation.reset({ index: 0, routes: [{ name: 'Login' as never }] });
+  };
+
+  const handleDeleteMovie = (id: number, title: string) => {
+    useAlertStore.getState().showAlert(
+      'Xác nhận xóa',
+      `Bạn có chắc muốn xóa phim "${title}"?`,
+      {
+        type: 'warning',
+        buttons: [
+          { text: 'Hủy', style: 'cancel' },
+          { 
+            text: 'Xóa ngay', 
+            onPress: async () => {
+              try {
+                setIsLoading(true);
+                await movieService.deleteMovie(id);
+                useAlertStore.getState().showAlert('Thành công', 'Đã xóa phim thành công!', { type: 'success' });
+                fetchMovies(); // Tải lại danh sách
+              } catch (error: any) {
+                useAlertStore.getState().showAlert('Lỗi', error.message || 'Lỗi khi xóa phim', { type: 'error' });
+              } finally {
+                setIsLoading(false);
+              }
+            }
+          }
+        ]
+      }
+    );
   };
 
   return (
@@ -215,7 +289,13 @@ const AdminHomeScreen: React.FC<Props> = ({ navigation }) => {
       >
         <Text style={styles.sectionTitle}>🎬 Box Office Rankings</Text>
         {movies.map((movie, index) => (
-          <MovieCard key={movie.id} movie={movie} rank={index + 1} />
+          <MovieCard 
+            key={movie.id} 
+            movie={movie} 
+            rank={index + 1} 
+            navigation={navigation}
+            onDelete={handleDeleteMovie}
+          />
         ))}
         <View style={{ height: 20 }} />
       </ScrollView>
@@ -315,8 +395,66 @@ const styles = StyleSheet.create({
   rankText: { fontSize: 13, fontWeight: '700', color: '#8A7851' },
   rankTextTop: { color: '#FFF' },
 
-  movieInfo: { flex: 1, marginRight: 10 },
-  movieTitle: { fontSize: 14, fontWeight: '700', color: '#1A1A2E', marginBottom: 5 },
+  movieThumbnail: {
+    width: 50,
+    height: 70,
+    borderRadius: 8,
+    backgroundColor: '#333',
+  },
+  movieInfo: {
+    flex: 1,
+    marginLeft: 15,
+    justifyContent: 'center',
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 6,
+  },
+  reactionMini: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  reactionMiniText: {
+    fontSize: 13,
+    color: '#FF6B6B',
+    fontWeight: '600',
+  },
+  actionGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 15,
+    paddingLeft: 15,
+    borderLeftWidth: 1,
+    borderLeftColor: '#F0F0F0',
+  },
+  editButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editText: {
+    fontSize: 10,
+    color: '#FFCC00',
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  deleteButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteText: {
+    fontSize: 10,
+    color: '#FF6B6B',
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  movieTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1A1A2E',
+  },
   movieMeta: { flexDirection: 'row' },
   genreTag: {
     paddingHorizontal: 8,
