@@ -5,7 +5,6 @@ import { Ionicons, Feather } from "@expo/vector-icons";
 
 import UserHomeScreen from "../screens/Home/UserHomeScreen";
 import MyTicketsScreen from "../screens/Tickets/MyTicketsScreen";
-import MenuScreen from "../screens/Menu/MenuScreen";
 
 const Tab = createBottomTabNavigator();
 
@@ -19,13 +18,7 @@ function EmptyScreen({ title }: { title: string }) {
                 alignItems: "center",
             }}
         >
-            <Text
-                style={{
-                    fontSize: 24,
-                    fontWeight: "900",
-                    color: "#4A2C13",
-                }}
-            >
+            <Text style={{ fontSize: 24, fontWeight: "900", color: "#4A2C13" }}>
                 {title}
             </Text>
         </View>
@@ -39,33 +32,41 @@ export default function MainTabNavigator() {
                 headerShown: false,
                 tabBarActiveTintColor: "#FFB800",
                 tabBarInactiveTintColor: "#222",
+                tabBarLabelPosition: "below-icon",
+
                 tabBarStyle: {
                     position: "absolute",
-                    width: "100%",
-                    height: 84,
-                    borderTopLeftRadius: 30,
-                    borderTopRightRadius: 30,
+                    left: 20,
+                    right: 20,
+                    bottom: 16,
+                    height: 86,
+                    borderRadius: 30,
                     backgroundColor: "#fff",
-                    paddingTop: 8,
-                    paddingBottom: 12,
                     borderTopWidth: 0,
-                    elevation: 8,
+                    paddingHorizontal: 0,
+                    paddingTop: 0,
+                    paddingBottom: 0,
+                    elevation: 10,
                     shadowColor: "#000",
                     shadowOpacity: 0.08,
                     shadowRadius: 10,
                 },
+
                 tabBarItemStyle: {
                     flex: 1,
+                    height: "100%",
                     alignItems: "center",
                     justifyContent: "center",
                 },
-                tabBarLabelStyle: {
-                    fontSize: 14,
-                    fontWeight: "800",
-                    textAlign: "center",
-                },
+
                 tabBarIconStyle: {
-                    marginTop: 4,
+                    marginBottom: 2,
+                },
+
+                tabBarLabelStyle: {
+                    fontSize: 13,
+                    fontWeight: "900",
+                    textAlign: "center",
                 },
             }}
         >
@@ -74,8 +75,8 @@ export default function MainTabNavigator() {
                 component={UserHomeScreen}
                 options={{
                     title: "Trang chủ",
-                    tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="home" size={size + 4} color={color} />
+                    tabBarIcon: ({ color }) => (
+                        <Ionicons name="home" size={28} color={color} />
                     ),
                 }}
             />
@@ -85,8 +86,8 @@ export default function MainTabNavigator() {
                 component={MyTicketsScreen}
                 options={{
                     title: "Vé của tôi",
-                    tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="ticket-outline" size={size + 4} color={color} />
+                    tabBarIcon: ({ color }) => (
+                        <Ionicons name="ticket-outline" size={28} color={color} />
                     ),
                 }}
             />
@@ -95,21 +96,13 @@ export default function MainTabNavigator() {
                 name="Cinema"
                 options={{
                     title: "Rạp",
-                    tabBarIcon: ({ color, size }) => (
-                        <Feather name="map-pin" size={size + 4} color={color} />
+                    tabBarIcon: ({ color }) => (
+                        <Feather name="map-pin" size={28} color={color} />
                     ),
                 }}
             >
                 {() => <EmptyScreen title="Rạp" />}
             </Tab.Screen>
-
-            <Tab.Screen
-                name="Menu"
-                component={MenuScreen}
-                options={{
-                    tabBarButton: () => null,
-                }}
-            />
         </Tab.Navigator>
     );
 }
