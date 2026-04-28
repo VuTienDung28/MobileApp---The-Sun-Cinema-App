@@ -62,10 +62,32 @@ export type RootStackParamList = {
   Register: undefined;
   UserHome: undefined;
   AdminHome: undefined;
+
   AddMovie: undefined;
   EditMovie: { movie: any };
   MovieDetail: { movieId: number };
   MovieList: undefined;
   AddTheater: undefined;
+
   Profile: undefined;
+
+  VerifyPassword:
+  | {
+    fullName?: string;
+    avatar?: string | null;
+    onSave?: (name: string, avatar: string | null) => void;
+  }
+  | undefined;
+
+  EditProfile:
+  | {
+    fullName?: string;
+    avatar?: string | null;
+    onSave?: (name: string, avatar: string | null) => void;
+  }
+  | undefined;
+
+  ChangePassword: undefined;
+  PaymentPin: undefined;
+  TransactionHistory: undefined;
 };
