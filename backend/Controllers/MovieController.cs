@@ -76,7 +76,7 @@ public class MovieController : ControllerBase
     // GET /api/movie/{id}
     // Chi tiết một phim (public)
     // =============================================
-    [HttpGet("{id:int}")]
+    [HttpGet("detail/{id:int}")]
     public async Task<IActionResult> GetById(int id)
     {
         try
@@ -121,7 +121,7 @@ public class MovieController : ControllerBase
     // PUT /api/movie/{id}
     // Cập nhật thông tin phim (Admin only)
     // =============================================
-    [HttpPut("{id:int}")]
+    [HttpPut("update/{id:int}")]
     [Authorize(Policy = "AdminOnly")]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateMovieDto dto)
     {
@@ -144,7 +144,7 @@ public class MovieController : ControllerBase
     // DELETE /api/movie/{id}
     // Xóa phim — từ chối nếu còn Showtime (Admin only)
     // =============================================
-    [HttpDelete("{id:int}")]
+    [HttpDelete("delete/{id:int}")]
     [Authorize(Policy = "AdminOnly")]
     public async Task<IActionResult> Delete(int id)
     {

@@ -20,8 +20,15 @@ export interface RegisterRequest {
 
 export interface AuthResponseData {
   token: string;
+  refreshToken: string;
   roles: string[];
 }
+
+export interface TokenRequest {
+  accessToken: string;
+  refreshToken: string;
+}
+
 
 export interface ApiResponse<T> {
   isSuccess: boolean;

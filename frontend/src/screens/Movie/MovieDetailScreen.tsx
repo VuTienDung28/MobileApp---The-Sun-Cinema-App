@@ -4,13 +4,13 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Image,
   TouchableOpacity,
   Dimensions,
   ActivityIndicator,
   SafeAreaView,
   StatusBar,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types';
@@ -93,6 +93,9 @@ const MovieDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           <Image 
             source={{ uri: getImageUrl(movie.backdropPosterUrl || movie.thumbnailPosterUrl) }} 
             style={styles.backdrop} 
+            contentFit="cover"
+            transition={300}
+            cachePolicy="disk"
           />
           <LinearGradient
             colors={['transparent', 'rgba(0,0,0,0.8)', '#1A1A1A']}
@@ -105,7 +108,13 @@ const MovieDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
           <View style={styles.headerContent}>
             <View style={styles.posterContainer}>
-              <Image source={{ uri: getImageUrl(movie.thumbnailPosterUrl) }} style={styles.miniPoster} />
+              <Image 
+                source={{ uri: getImageUrl(movie.thumbnailPosterUrl) }} 
+                style={styles.miniPoster} 
+                contentFit="cover"
+                transition={200}
+                cachePolicy="disk"
+              />
             </View>
             
             <View style={styles.mainInfo}>

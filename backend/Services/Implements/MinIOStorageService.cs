@@ -7,7 +7,7 @@ using backend.Models;
 using backend.Services.Interface;
 using Microsoft.Extensions.Options;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.Processing;
 
 namespace backend.Services.Implements
@@ -18,9 +18,8 @@ namespace backend.Services.Implements
         private readonly AmazonS3Client _s3Client;
 
         // Cấu hình giới hạn upload
-        private const long   MaxFileSizeBytes = 5 * 1024 * 1024; // 5MB
-        private const int    AvatarSizePx     = 400;              // resize về 400x400
-        private const int    JpegQuality      = 85;               // chất lượng nén JPEG
+        private const long   MaxFileSizeBytes = 10 * 1024 * 1024; // Tăng lên 10MB để thoải mái hơn
+        private const int    DefaultWebpQuality = 80;             // chất lượng nén WebP (80 là mức tối ưu)
 
         private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -46,33 +45,44 @@ namespace backend.Services.Implements
         // =============================================
         // Upload file → relative path
         // =============================================
-        public async Task<string> UploadAsync(IFormFile file, string bucketName, string objectKey)
+        public async Task<string> UploadAsync(IFormFile file, string bucketName, string objectKey, int? width = null, int? height = null)
         {
             // 1. Validate kích thước
             if (file.Length > MaxFileSizeBytes)
-                throw new UserFriendlyException("Kích thước ảnh không được vượt quá 5MB.", "FILE_TOO_LARGE");
+                throw new UserFriendlyException("Kích thước ảnh không được vượt quá 10MB.", "FILE_TOO_LARGE");
 
             // 2. Validate extension
             var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
             if (!AllowedExtensions.Contains(ext))
                 throw new UserFriendlyException("Chỉ chấp nhận ảnh định dạng JPG, PNG hoặc WEBP.", "INVALID_FILE_TYPE");
 
-            // 3. Validate thực sự là ảnh (chống giả mạo extension) + Resize 400x400
+            // 3. Đảm bảo objectKey kết thúc bằng .webp vì chúng ta sẽ convert sang WebP
+            if (!objectKey.EndsWith(".webp", StringComparison.OrdinalIgnoreCase))
+            {
+                objectKey = Path.ChangeExtension(objectKey, ".webp");
+            }
+
             using var outputStream = new MemoryStream();
 
             try
             {
                 using var image = await Image.LoadAsync(file.OpenReadStream());
 
-                // Resize về 400x400, giữ nguyên tỉ lệ & crop giữa
-                image.Mutate(x => x.Resize(new ResizeOptions
+                // 4. Resize nếu có yêu cầu
+                if (width.HasValue || height.HasValue)
                 {
-                    Size = new Size(AvatarSizePx, AvatarSizePx),
-                    Mode = ResizeMode.Crop
-                }));
+                    image.Mutate(x => x.Resize(new ResizeOptions
+                    {
+                        Size = new Size(width ?? 0, height ?? 0),
+                        Mode = ResizeMode.Max // Giữ nguyên tỉ lệ, không vượt quá size chỉ định
+                    }));
+                }
 
-                // Luôn lưu ra JPEG để đồng nhất format & tối ưu dung lượng
-                await image.SaveAsync(outputStream, new JpegEncoder { Quality = JpegQuality });
+                // 5. Luôn lưu ra WebP để tối ưu dung lượng và chất lượng
+                await image.SaveAsync(outputStream, new WebpEncoder 
+                { 
+                    Quality = DefaultWebpQuality
+                });
                 outputStream.Position = 0;
             }
             catch (UnknownImageFormatException)
@@ -80,19 +90,18 @@ namespace backend.Services.Implements
                 throw new UserFriendlyException("File không phải ảnh hợp lệ.", "INVALID_IMAGE");
             }
 
-            // 4. Upload lên MinIO
+            // 6. Upload lên MinIO
             var request = new PutObjectRequest
             {
                 BucketName  = bucketName,
                 Key         = objectKey,
                 InputStream = outputStream,
-                ContentType = "image/jpeg",
-                // Không set CannedACL ở đây — public access đã được set ở bucket level bằng mc
+                ContentType = "image/webp",
             };
 
             await _s3Client.PutObjectAsync(request);
 
-            // 5. Trả về relative path (KHÔNG chứa host/domain)
+            // 7. Trả về relative path
             return $"/{bucketName}/{objectKey}";
         }
 

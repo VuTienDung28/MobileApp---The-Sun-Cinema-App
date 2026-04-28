@@ -1,4 +1,4 @@
-﻿using backend.DTOs;
+using backend.DTOs;
 using backend.Exceptions;
 using backend.Models;
 using backend.Repositories.Interface;
@@ -86,14 +86,14 @@ namespace backend.Services.Implements
                 ?? throw new UserFriendlyException("Không tìm thấy người dùng.", "USER_NOT_FOUND");
             // Tạo object key duy nhất: userId_timestamp.jpg
             var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            var objectKey = $"{userId}_{timestamp}.jpg";
+            var objectKey = $"{userId}_{timestamp}.webp";
             // Xóa avatar cũ nếu đã có
             if (!string.IsNullOrEmpty(user.AvatarUrl))
             {
                 await _storageService.DeleteAsync(user.AvatarUrl);
             }
             // Upload ảnh mới → nhận relative path
-            var relativePath = await _storageService.UploadAsync(file, _minioOptions.AvatarBucketName, objectKey);
+            var relativePath = await _storageService.UploadAsync(file, _minioOptions.AvatarBucketName, objectKey, 400, 400);
             // Lưu relative path vào DB
             user.AvatarUrl = relativePath;
             var result = await _userRepository.UpdateAsync(user);

@@ -6,5 +6,7 @@ namespace backend.Services.Interface
     {
         Task<AuthResponseDto> RegisterAsync(RegisterDto registerDto);
         Task<AuthResponseDto> LoginAsync(LoginDto loginDto);
+        Task<AuthResponseDto> RefreshTokenAsync(TokenRequestDto tokenRequestDto);
+
     }
 }

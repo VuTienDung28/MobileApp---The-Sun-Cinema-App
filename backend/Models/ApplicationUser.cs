@@ -15,6 +15,10 @@ namespace backend.Models
         /// <summary>Đường dẫn tương đối ảnh đại diện, vd: /avatar-images/user123_1714.jpg</summary>
         public string? AvatarUrl { get; set; }
 
+        public string? RefreshToken { get; set; }
+        public DateTime? RefreshTokenExpiryTime { get; set; }
+
         public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
+
     }
 }
