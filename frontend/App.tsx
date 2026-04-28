@@ -8,7 +8,7 @@ import MainTabNavigator from "./src/navigation/MainTabNavigator";
 import LoginScreen from './src/screens/Auth/LoginScreen';
 import RegisterScreen from './src/screens/Auth/RegisterScreen';
 import AdminHomeScreen from './src/screens/Home/AdminHomeScreen';
-import UserHomeScreen from './src/screens/Home/UserHomeScreen'; // Có thể bỏ đi nếu MainTabNavigator đã bao gồm màn hình này
+import UserHomeScreen from './src/screens/Home/UserHomeScreen'; 
 import ProfileScreen from './src/screens/Profile/ProfileScreen';
 import MovieDetailScreen from './src/screens/Movie/MovieDetailScreen';
 import MovieListScreen from './src/screens/Movie/MovieListScreen';
@@ -49,7 +49,7 @@ export default function App() {
                     <Stack.Screen name="Register" component={RegisterScreen} />
                 </>
             ) : role === 'Admin' ? (
-                // Nhóm màn hình dành cho Admin (Đã gộp code của cả 2)
+                // Nhóm màn hình dành cho Admin
                 <>
                     <Stack.Screen name="AdminHome" component={AdminHomeScreen} />
                     <Stack.Screen name="AddMovie" component={AddMovieScreen} />
