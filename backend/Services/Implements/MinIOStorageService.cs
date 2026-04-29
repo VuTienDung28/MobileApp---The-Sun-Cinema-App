@@ -52,7 +52,23 @@ namespace backend.Services.Implements
                 throw new UserFriendlyException("Kích thước ảnh không được vượt quá 10MB.", "FILE_TOO_LARGE");
 
             // 2. Validate extension
-            var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+            // Stripping quotes because some browsers/platforms might include them in the filename
+            var fileName = file.FileName?.Trim('\"', '\'');
+            var ext = Path.GetExtension(fileName ?? "").ToLowerInvariant();
+
+            // Fallback check ContentType if extension is missing (common in some mobile uploads)
+            if (string.IsNullOrEmpty(ext))
+            {
+                ext = file.ContentType.ToLowerInvariant() switch
+                {
+                    "image/jpeg" => ".jpg",
+                    "image/jpg" => ".jpg",
+                    "image/png" => ".png",
+                    "image/webp" => ".webp",
+                    _ => ""
+                };
+            }
+
             if (!AllowedExtensions.Contains(ext))
                 throw new UserFriendlyException("Chỉ chấp nhận ảnh định dạng JPG, PNG hoặc WEBP.", "INVALID_FILE_TYPE");
 

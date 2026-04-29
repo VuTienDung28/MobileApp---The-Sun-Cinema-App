@@ -79,6 +79,7 @@ namespace backend.Services.Implements
                 Message = "Đăng nhập thành công",
                 Token = token,
                 RefreshToken = refreshToken,
+                FullName = user.FullName,
                 Roles = roles
             };
         }
@@ -122,7 +123,8 @@ namespace backend.Services.Implements
             {
                 new Claim(ClaimTypes.Name, user.UserName!),
                 new Claim(ClaimTypes.NameIdentifier, user.Id),
-                new Claim(ClaimTypes.Email, user.Email!)
+                new Claim(ClaimTypes.Email, user.Email!),
+                new Claim("fullName", user.FullName ?? string.Empty)
             };
 
             foreach (var role in roles)

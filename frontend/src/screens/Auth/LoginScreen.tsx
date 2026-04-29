@@ -29,9 +29,9 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
     try {
       const response = await authService.login(email, password);
       if (response && response.isSuccess) {
-        const { token, refreshToken, roles } = response.data;
+        const { token, refreshToken, roles, fullName } = response.data;
         const role: UserRole = roles.includes('Admin') ? 'Admin' : 'User';
-        await signIn(token, refreshToken, role);
+        await signIn(token, refreshToken, role, fullName ?? '');
       } else {
 
         useAlertStore.getState().showAlert('Đăng nhập thất bại', response.message || 'Lỗi không xác định', { type: 'error' });

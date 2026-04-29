@@ -5,6 +5,7 @@ import { Ionicons, Feather } from "@expo/vector-icons";
 
 import UserHomeScreen from "../screens/Home/UserHomeScreen";
 import MyTicketsScreen from "../screens/Tickets/MyTicketsScreen";
+import MenuScreen from "../screens/Menu/MenuScreen";
 
 const Tab = createBottomTabNavigator();
 
@@ -103,6 +104,17 @@ export default function MainTabNavigator() {
             >
                 {() => <EmptyScreen title="Rạp" />}
             </Tab.Screen>
+
+            <Tab.Screen
+                name="Menu"
+                component={MenuScreen}
+                options={{
+                    title: "Menu",
+                    tabBarIcon: ({ color }) => (
+                        <Feather name="menu" size={28} color={color} />
+                    ),
+                }}
+            />
         </Tab.Navigator>
     );
 }

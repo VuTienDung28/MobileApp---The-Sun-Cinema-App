@@ -42,7 +42,7 @@ public class AuthController : ControllerBase
         try
         {
             var result = await _authService.LoginAsync(loginDto);
-            var responseData = new { Token = result.Token, RefreshToken = result.RefreshToken, Roles = result.Roles };
+            var responseData = new { Token = result.Token, RefreshToken = result.RefreshToken, FullName = result.FullName, Roles = result.Roles };
             return Ok(ApiResponse<object>.Success(responseData, result.Message, "LOGIN_SUCCESS"));
         }
         catch (UserFriendlyException ex)

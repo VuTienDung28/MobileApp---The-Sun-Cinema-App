@@ -79,9 +79,10 @@ axiosClient.interceptors.response.use(
         if (response.data?.isSuccess) {
           const { token: newToken, refreshToken: newRefreshToken, roles } = response.data.data;
           
-          // Cập nhật vào store và storage
+          // Cập nhật vào store và storage, giữ nguyên fullName hiện tại
           const role = roles.includes('Admin') ? 'Admin' : 'User';
-          await useAuthStore.getState().signIn(newToken, newRefreshToken, role as any);
+          const currentFullName = useAuthStore.getState().fullName ?? '';
+          await useAuthStore.getState().signIn(newToken, newRefreshToken, role as any, currentFullName);
 
           processQueue(null, newToken);
           originalRequest.headers.Authorization = `Bearer ${newToken}`;

@@ -6,10 +6,21 @@ import {
     SafeAreaView,
     TouchableOpacity,
     TextInput,
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    ScrollView,
+    Platform,
+    TouchableWithoutFeedback,
+    Keyboard,
 } from 'react-native';
 import { Ionicons, Feather } from '@expo/vector-icons';
 
+import userService from '../../services/userService';
+import useAlertStore from '../../store/useAlertStore';
+
 export default function ChangePasswordScreen({ navigation }: any) {
+    const showAlert = useAlertStore((state) => state.showAlert);
+
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmNewPassword, setConfirmNewPassword] = useState('');
@@ -18,70 +29,186 @@ export default function ChangePasswordScreen({ navigation }: any) {
     const [showNew, setShowNew] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
 
-    const handleChangePassword = () => {
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // ─── Validation & API call ────────────────────────────────────────────────
+    const handleChangePassword = async () => {
+        Keyboard.dismiss();
+
         if (!currentPassword || !newPassword || !confirmNewPassword) {
-            alert('Vui lòng nhập đầy đủ thông tin');
+            showAlert('Lỗi', 'Vui lòng nhập đầy đủ thông tin.', { type: 'error' });
+            return;
+        }
+
+        if (newPassword.length < 6) {
+            showAlert('Lỗi', 'Mật khẩu mới phải có ít nhất 6 ký tự.', { type: 'error' });
             return;
         }
 
         if (newPassword !== confirmNewPassword) {
-            alert('Mật khẩu mới nhập lại không khớp');
+            showAlert('Lỗi', 'Mật khẩu mới nhập lại không khớp.', { type: 'error' });
             return;
         }
 
-        alert('Đổi mật khẩu thành công');
-        navigation.goBack();
+        if (newPassword === currentPassword) {
+            showAlert('Lỗi', 'Mật khẩu mới phải khác mật khẩu hiện tại.', { type: 'error' });
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            await userService.changePassword({
+                currentPassword,
+                newPassword,
+                confirmNewPassword,
+            });
+
+            showAlert('Thành công', 'Đổi mật khẩu thành công!', {
+                type: 'success',
+                buttons: [{ text: 'OK', onPress: () => navigation.goBack() }],
+            });
+        } catch (err: any) {
+            const msg =
+                err?.message ??
+                err?.response?.data?.message ??
+                'Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu hiện tại.';
+            showAlert('Lỗi', msg, { type: 'error' });
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
         <SafeAreaView style={styles.container}>
+            {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()}>
+                <TouchableOpacity onPress={() => { Keyboard.dismiss(); navigation.goBack(); }}>
                     <Ionicons name="arrow-back" size={30} color="#8B641F" />
                 </TouchableOpacity>
 
                 <Text style={styles.headerTitle}>Đổi mật khẩu</Text>
 
-                <Ionicons name="menu" size={32} color="#8B641F" />
+                <View style={{ width: 32 }} />
             </View>
 
+            {/* Section label */}
             <View style={styles.sectionTitleBox}>
                 <Text style={styles.sectionTitle}>MẬT KHẨU ĐĂNG NHẬP</Text>
             </View>
 
-            <View style={styles.content}>
-                <PasswordInput
-                    value={currentPassword}
-                    onChangeText={setCurrentPassword}
-                    placeholder="Mật khẩu hiện tại"
-                    visible={showCurrent}
-                    onToggleVisible={() => setShowCurrent(!showCurrent)}
-                />
-
-                <PasswordInput
-                    value={newPassword}
-                    onChangeText={setNewPassword}
-                    placeholder="Mật khẩu mới"
-                    visible={showNew}
-                    onToggleVisible={() => setShowNew(!showNew)}
-                />
-
-                <PasswordInput
-                    value={confirmNewPassword}
-                    onChangeText={setConfirmNewPassword}
-                    placeholder="Nhập lại mật khẩu mới"
-                    visible={showConfirm}
-                    onToggleVisible={() => setShowConfirm(!showConfirm)}
-                />
-
-                <TouchableOpacity style={styles.button} onPress={handleChangePassword}>
-                    <Text style={styles.buttonText}>Đổi mật khẩu</Text>
-                </TouchableOpacity>
-            </View>
+            {/*
+              KeyboardAvoidingView đẩy nội dung lên khi bàn phím xuất hiện (chỉ dùng cho Native).
+            */}
+            {Platform.OS !== 'web' ? (
+                <KeyboardAvoidingView
+                    style={{ flex: 1 }}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+                >
+                    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                        <ScrollView
+                            contentContainerStyle={styles.content}
+                            keyboardShouldPersistTaps="handled"
+                            showsVerticalScrollIndicator={false}
+                        >
+                            <MainContent 
+                                currentPassword={currentPassword} setCurrentPassword={setCurrentPassword}
+                                newPassword={newPassword} setNewPassword={setNewPassword}
+                                confirmNewPassword={confirmNewPassword} setConfirmNewPassword={setConfirmNewPassword}
+                                showCurrent={showCurrent} setShowCurrent={setShowCurrent}
+                                showNew={showNew} setShowNew={setShowNew}
+                                showConfirm={showConfirm} setShowConfirm={setShowConfirm}
+                                isSubmitting={isSubmitting}
+                                handleChangePassword={handleChangePassword}
+                            />
+                        </ScrollView>
+                    </TouchableWithoutFeedback>
+                </KeyboardAvoidingView>
+            ) : (
+                <ScrollView
+                    contentContainerStyle={styles.content}
+                    showsVerticalScrollIndicator={false}
+                >
+                    <MainContent 
+                        currentPassword={currentPassword} setCurrentPassword={setCurrentPassword}
+                        newPassword={newPassword} setNewPassword={setNewPassword}
+                        confirmNewPassword={confirmNewPassword} setConfirmNewPassword={setConfirmNewPassword}
+                        showCurrent={showCurrent} setShowCurrent={setShowCurrent}
+                        showNew={showNew} setShowNew={setShowNew}
+                        showConfirm={showConfirm} setShowConfirm={setShowConfirm}
+                        isSubmitting={isSubmitting}
+                        handleChangePassword={handleChangePassword}
+                    />
+                </ScrollView>
+            )}
         </SafeAreaView>
     );
 }
 
+// ─── Sub-component MainContent ────────────────────────────────────────────────
+type MainContentProps = {
+    currentPassword: string; setCurrentPassword: (t: string) => void;
+    newPassword: string; setNewPassword: (t: string) => void;
+    confirmNewPassword: string; setConfirmNewPassword: (t: string) => void;
+    showCurrent: boolean; setShowCurrent: (b: boolean) => void;
+    showNew: boolean; setShowNew: (b: boolean) => void;
+    showConfirm: boolean; setShowConfirm: (b: boolean) => void;
+    isSubmitting: boolean;
+    handleChangePassword: () => void;
+};
+
+function MainContent({
+    currentPassword, setCurrentPassword,
+    newPassword, setNewPassword,
+    confirmNewPassword, setConfirmNewPassword,
+    showCurrent, setShowCurrent,
+    showNew, setShowNew,
+    showConfirm, setShowConfirm,
+    isSubmitting,
+    handleChangePassword
+}: MainContentProps) {
+    return (
+        <>
+            <PasswordInput
+                value={currentPassword}
+                onChangeText={setCurrentPassword}
+                placeholder="Mật khẩu hiện tại"
+                visible={showCurrent}
+                onToggleVisible={() => setShowCurrent(!showCurrent)}
+            />
+
+            <PasswordInput
+                value={newPassword}
+                onChangeText={setNewPassword}
+                placeholder="Mật khẩu mới (ít nhất 6 ký tự)"
+                visible={showNew}
+                onToggleVisible={() => setShowNew(!showNew)}
+            />
+
+            <PasswordInput
+                value={confirmNewPassword}
+                onChangeText={setConfirmNewPassword}
+                placeholder="Nhập lại mật khẩu mới"
+                visible={showConfirm}
+                onToggleVisible={() => setShowConfirm(!showConfirm)}
+            />
+
+            <TouchableOpacity
+                style={[styles.button, isSubmitting && { opacity: 0.7 }]}
+                onPress={handleChangePassword}
+                disabled={isSubmitting}
+            >
+                {isSubmitting ? (
+                    <ActivityIndicator color="#3A2418" size="large" />
+                ) : (
+                    <Text style={styles.buttonText}>Đổi mật khẩu</Text>
+                )}
+            </TouchableOpacity>
+        </>
+    );
+}
+
+// ─── Sub-component PasswordInput ──────────────────────────────────────────────
 type PasswordInputProps = {
     value: string;
     onChangeText: (text: string) => void;
@@ -90,13 +217,7 @@ type PasswordInputProps = {
     onToggleVisible: () => void;
 };
 
-function PasswordInput({
-    value,
-    onChangeText,
-    placeholder,
-    visible,
-    onToggleVisible,
-}: PasswordInputProps) {
+function PasswordInput({ value, onChangeText, placeholder, visible, onToggleVisible }: PasswordInputProps) {
     return (
         <View style={styles.inputBox}>
             <Feather name="lock" size={26} color="#9A6B00" />
@@ -108,6 +229,8 @@ function PasswordInput({
                 value={value}
                 onChangeText={onChangeText}
                 secureTextEntry={!visible}
+                autoCapitalize="none"
+                returnKeyType="next"
             />
 
             <TouchableOpacity onPress={onToggleVisible}>
@@ -121,6 +244,7 @@ function PasswordInput({
     );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -136,8 +260,6 @@ const styles = StyleSheet.create({
         elevation: 3,
     },
     headerTitle: {
-        flex: 1,
-        marginLeft: 18,
         fontSize: 25,
         fontWeight: '900',
         color: '#2F211A',
@@ -158,6 +280,8 @@ const styles = StyleSheet.create({
     content: {
         paddingHorizontal: 22,
         paddingTop: 28,
+        // Padding cuối đủ lớn để nội dung không bị bàn phím che
+        paddingBottom: 80,
     },
     inputBox: {
         height: 66,

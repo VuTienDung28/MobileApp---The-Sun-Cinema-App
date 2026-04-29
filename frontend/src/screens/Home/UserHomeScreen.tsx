@@ -13,15 +13,11 @@ import { useNavigation } from "@react-navigation/native";
 
 import movieService, { MovieListItem } from "../../services/movieService";
 import { ActivityIndicator } from "react-native";
+import useAuthStore from "../../store/useAuthStore";
+import { getImageUrl } from "../../utils/imageUtils";
 
 const { width } = Dimensions.get("window");
 
-const getImageUrl = (url: string) => {
-  if (!url) return "https://via.placeholder.com/300x450";
-  if (url.startsWith("http")) return url;
-  const baseUrl = process.env.EXPO_PUBLIC_BASE_IP ? `http://${process.env.EXPO_PUBLIC_BASE_IP}:9000` : "http://localhost:9000";
-  return `${baseUrl}${url}`;
-};
 
 const formatDuration = (minutes: number) => {
   const h = Math.floor(minutes / 60);
@@ -42,6 +38,7 @@ const formatDate = (dateString: string) => {
 
 export default function UserHomeScreen() {
   const navigation = useNavigation<any>();
+  const avatarUrl = useAuthStore((state) => state.avatarUrl);
 
   const [activeTab, setActiveTab] = useState("Đang chiếu");
   const [activeIndex, setActiveIndex] = useState(0);
@@ -93,7 +90,16 @@ export default function UserHomeScreen() {
               activeOpacity={0.7}
               onPress={() => navigation.navigate("Profile")}
             >
-              <Ionicons name="person" size={24} color="#FFB800" />
+              {avatarUrl ? (
+                <Image
+                  source={{ uri: getImageUrl(avatarUrl) }}
+                  style={styles.avatarImage}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                />
+              ) : (
+                <Ionicons name="person" size={24} color="#FFB800" />
+              )}
             </TouchableOpacity>
 
             <View style={styles.logoBox}>
@@ -301,6 +307,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     justifyContent: "center",
     alignItems: "center",
+    overflow: "hidden",
+  },
+
+  avatarImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
   },
 
   logoBox: {

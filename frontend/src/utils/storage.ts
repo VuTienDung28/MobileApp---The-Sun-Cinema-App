@@ -97,7 +97,39 @@ const storage = {
     } catch (e) {
       console.error('Error removing refresh token', e);
     }
-  }
+  },
+  getFullName: async (): Promise<string | null> => {
+    try {
+      if (Platform.OS === 'web') {
+        return sessionStorage.getItem('userFullName');
+      }
+      return await SecureStore.getItemAsync('userFullName');
+    } catch (e) {
+      return null;
+    }
+  },
+  setFullName: async (fullName: string): Promise<void> => {
+    try {
+      if (Platform.OS === 'web') {
+        sessionStorage.setItem('userFullName', fullName);
+      } else {
+        await SecureStore.setItemAsync('userFullName', fullName);
+      }
+    } catch (e) {
+      console.error('Error saving fullName', e);
+    }
+  },
+  removeFullName: async (): Promise<void> => {
+    try {
+      if (Platform.OS === 'web') {
+        sessionStorage.removeItem('userFullName');
+      } else {
+        await SecureStore.deleteItemAsync('userFullName');
+      }
+    } catch (e) {
+      console.error('Error removing fullName', e);
+    }
+  },
 };
 
 

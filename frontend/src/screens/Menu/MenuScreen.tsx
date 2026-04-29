@@ -8,9 +8,13 @@ import {
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import useAuthStore from "../../store/useAuthStore";
+import { Image } from "expo-image";
+import { getImageUrl } from "../../utils/imageUtils";
 
 export default function MenuScreen() {
     const navigation = useNavigation<any>();
+    const { fullName, role, avatarUrl } = useAuthStore();
 
     return (
         <View style={styles.container}>
@@ -30,11 +34,20 @@ export default function MenuScreen() {
 
                 <View style={styles.profileArea}>
                     <View style={styles.avatarCircle}>
-                        <Text style={styles.avatarEmoji}>👨‍🍳</Text>
+                        {avatarUrl ? (
+                            <Image
+                                source={{ uri: getImageUrl(avatarUrl) }}
+                                style={styles.avatarImage}
+                                contentFit="cover"
+                                cachePolicy="memory-disk"
+                            />
+                        ) : (
+                            <Text style={styles.avatarEmoji}>👨‍🍳</Text>
+                        )}
                     </View>
 
-                    <Text style={styles.name}>ĐẶNG THỊ KHÁNH VY</Text>
-                    <Text style={styles.role}>Thành viên</Text>
+                    <Text style={styles.name}>{fullName || 'Người dùng'}</Text>
+                    <Text style={styles.role}>{role === 'Admin' ? 'Quản trị viên' : 'Thành viên'}</Text>
 
                     <View style={styles.memberBadge}>
                         <Ionicons name="star" size={30} color="#fff" />
@@ -147,6 +160,11 @@ const styles = StyleSheet.create({
 
     avatarEmoji: {
         fontSize: 108,
+    },
+    avatarImage: {
+        width: 190,
+        height: 190,
+        borderRadius: 95,
     },
 
     name: {

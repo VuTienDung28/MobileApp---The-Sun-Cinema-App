@@ -21,6 +21,7 @@ export interface RegisterRequest {
 export interface AuthResponseData {
   token: string;
   refreshToken: string;
+  fullName: string;
   roles: string[];
 }
 
@@ -70,6 +71,7 @@ export type RootStackParamList = {
   AddTheater: undefined;
 
   Profile: undefined;
+  Menu: undefined;
 
   VerifyPassword:
   | {
@@ -79,12 +81,20 @@ export type RootStackParamList = {
   }
   | undefined;
 
+  // EditProfile nhận toàn bộ profile object để pre-populate form
   EditProfile:
   | {
-    fullName?: string;
-    avatar?: string | null;
-    onSave?: (name: string, avatar: string | null) => void;
-  }
+      profile?: {
+        fullName: string;
+        email: string;
+        phoneNumber?: string;
+        dateOfBirth?: string;
+        gender?: string;
+        province?: string;
+        district?: string;
+        avatarUrl?: string;
+      };
+    }
   | undefined;
 
   ChangePassword: undefined;

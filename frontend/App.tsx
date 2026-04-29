@@ -10,6 +10,11 @@ import RegisterScreen from './src/screens/Auth/RegisterScreen';
 import AdminHomeScreen from './src/screens/Home/AdminHomeScreen';
 import UserHomeScreen from './src/screens/Home/UserHomeScreen'; 
 import ProfileScreen from './src/screens/Profile/ProfileScreen';
+import VerifyPasswordScreen from './src/screens/Profile/VerifyPasswordScreen';
+import EditProfileScreen from './src/screens/Profile/EditProfileScreen';
+import ChangePasswordScreen from './src/screens/Profile/ChangePasswordScreen';
+import PaymentPinScreen from './src/screens/Profile/PaymentPinScreen';
+import TransactionHistoryScreen from './src/screens/Profile/TransactionHistoryScreen';
 import MovieDetailScreen from './src/screens/Movie/MovieDetailScreen';
 import MovieListScreen from './src/screens/Movie/MovieListScreen';
 
@@ -57,6 +62,11 @@ export default function App() {
                     <Stack.Screen name="MovieDetail" component={MovieDetailScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="AddTheater" component={AddTheaterScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="Profile" component={ProfileScreen} />
+                    <Stack.Screen name="VerifyPassword" component={VerifyPasswordScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="PaymentPin" component={PaymentPinScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="TransactionHistory" component={TransactionHistoryScreen} options={{ headerShown: false }} />
                 </>
             ) : (
                 // Nhóm màn hình dành cho User
@@ -65,6 +75,11 @@ export default function App() {
                     <Stack.Screen name="MovieDetail" component={MovieDetailScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="MovieList" component={MovieListScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="Profile" component={ProfileScreen} />
+                    <Stack.Screen name="VerifyPassword" component={VerifyPasswordScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="PaymentPin" component={PaymentPinScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="TransactionHistory" component={TransactionHistoryScreen} options={{ headerShown: false }} />
                 </>
             )}
         </Stack.Navigator>

@@ -12,33 +12,7 @@ import { RootStackParamList, RegisterRequest, DropdownOption } from '../../types
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Register'>;
 
-const genderOptions: DropdownOption[] = [
-  { label: 'Nam', value: 'Male' },
-  { label: 'Nữ', value: 'Female' },
-];
-
-const provinceOptions: DropdownOption[] = [
-  { label: 'Hà Nội', value: 'HN' },
-  { label: 'TP. Hồ Chí Minh', value: 'HCM' },
-  { label: 'Đà Nẵng', value: 'DN' },
-];
-
-const districtOptionsMap: Record<string, DropdownOption[]> = {
-  'HN': [
-    { label: 'Quận Ba Đình', value: 'BaDinh' },
-    { label: 'Quận Hoàn Kiếm', value: 'HoanKiem' },
-    { label: 'Quận Cầu Giấy', value: 'CauGiay' },
-  ],
-  'HCM': [
-    { label: 'Quận 1', value: 'Q1' },
-    { label: 'Quận 3', value: 'Q3' },
-    { label: 'Thành phố Thủ Đức', value: 'ThuDuc' },
-  ],
-  'DN': [
-    { label: 'Quận Hải Châu', value: 'HaiChau' },
-    { label: 'Quận Sơn Trà', value: 'SonTra' },
-  ]
-};
+import { PROVINCE_OPTIONS, DISTRICT_OPTIONS_MAP, GENDER_OPTIONS } from '../../constants/addressData';
 
 const RegisterScreen: React.FC<Props> = ({ navigation }) => {
   const [formData, setFormData] = useState<RegisterRequest>({
@@ -181,8 +155,7 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
                 <CustomDropdown
                   iconName="people"
                   placeholder="Giới tính"
-                  value={formData.gender}
-                  options={genderOptions}
+                  options={GENDER_OPTIONS}
                   onSelect={(val) => setFormData({ ...formData, gender: val })}
                 />
               </View>
@@ -191,7 +164,7 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
                   iconName="location"
                   placeholder="Khu vực"
                   value={formData.province}
-                  options={provinceOptions}
+                  options={PROVINCE_OPTIONS}
                   onSelect={(val) => setFormData({ ...formData, province: val, district: '' })}
                 />
               </View>
@@ -200,7 +173,7 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
               iconName="map"
               placeholder="Quận/huyện"
               value={formData.district}
-              options={formData.province ? districtOptionsMap[formData.province] : []}
+              options={formData.province ? DISTRICT_OPTIONS_MAP[formData.province] : []}
               onSelect={(val) => setFormData({ ...formData, district: val })}
             />
             <CustomButton
