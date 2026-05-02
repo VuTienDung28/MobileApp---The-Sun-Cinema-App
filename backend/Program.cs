@@ -96,6 +96,8 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IMovieRepository, MovieRepository>();
 builder.Services.AddScoped<IMovieService, MovieService>();
+builder.Services.AddScoped<ICinemaRepository, CinemaRepository>();
+builder.Services.AddScoped<ICinemaService, CinemaService>();
 
 // ===== Storage Configuration =====
 builder.Services.AddScoped<IStorageService, MinIOStorageService>();
