@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using backend.Data;
@@ -35,6 +35,7 @@ namespace backend.Repositories.Implements
         {
             return await _db.Cinemas
                 .Include(c => c.Rooms)
+                    .ThenInclude(r => r.Seats)
                 .FirstOrDefaultAsync(c => c.Id == id);
         }
 
