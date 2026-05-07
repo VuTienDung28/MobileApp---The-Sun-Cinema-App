@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using backend.DTOs;
@@ -115,7 +115,8 @@ namespace backend.Services.Implements
             Rooms = c.Rooms.Select(r => new RoomInCinemaDto
             {
                 Id = r.Id,
-                Name = r.Name
+                Name = r.Name,
+                TotalSeats = r.Seats?.Count ?? 0
             }).ToList()
         };
     }
