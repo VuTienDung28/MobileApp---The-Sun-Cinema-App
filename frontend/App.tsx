@@ -22,6 +22,10 @@ import MovieListScreen from './src/screens/Movie/MovieListScreen';
 import AddMovieScreen from './src/screens/AdminManageScreens/AddMovieScreen';  
 import EditMovieScreen from './src/screens/AdminManageScreens/EditMovieScreen';
 import AddTheaterScreen from './src/screens/AdminManageScreens/AddTheaterScreen';
+import EditTheaterScreen from './src/screens/AdminManageScreens/EditTheaterScreen';
+import TheaterDetailScreen from './src/screens/AdminManageScreens/TheaterDetailScreen';
+import SeatLayoutManageScreen from './src/screens/AdminManageScreens/SeatLayoutManageScreen';
+import AddShowtimeScreen from './src/screens/AdminManageScreens/AddShowtimeScreen';
 import AdminMenuScreen from './src/screens/Menu/AdminMenuScreen';
 import TotalTicketsScreen from './src/screens/Tickets/TotalTicketsScreen';
 
@@ -63,6 +67,10 @@ export default function App() {
                     <Stack.Screen name="EditMovie" component={EditMovieScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="MovieDetail" component={MovieDetailScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="AddTheater" component={AddTheaterScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="EditTheater" component={EditTheaterScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="TheaterDetail" component={TheaterDetailScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="SeatLayoutManage" component={SeatLayoutManageScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="AddShowtime" component={AddShowtimeScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="TotalTickets" component={TotalTicketsScreen} />
                     <Stack.Screen name="Profile" component={ProfileScreen} />
                     <Stack.Screen name="AdminMenu" component={AdminMenuScreen} />

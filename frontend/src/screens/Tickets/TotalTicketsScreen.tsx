@@ -21,95 +21,12 @@ type Props = NativeStackScreenProps<RootStackParamList, 'TotalTickets'>;
 // ============================================================
 
 // 🔴 Dữ liệu theo TUẦN
-const WEEK_DATA = {
-  totalTickets: 28456,
-  totalRevenue: 2134200000,
-  ticketsByMovie: [
-    { name: 'Avengers: Doomsday', tickets: 4821, color: '#FF6B6B', legendFontColor: '#1A1A2E', legendFontSize: 12 },
-    { name: 'Lilo & Stitch', tickets: 3612, color: '#4ECDC4', legendFontColor: '#1A1A2E', legendFontSize: 12 },
-    { name: 'Mission: Impossible 8', tickets: 2974, color: '#A78BFA', legendFontColor: '#1A1A2E', legendFontSize: 12 },
-    { name: 'Minecraft Movie', tickets: 2543, color: '#F59E0B', legendFontColor: '#1A1A2E', legendFontSize: 12 },
-    { name: 'Snow White', tickets: 1897, color: '#60A5FA', legendFontColor: '#1A1A2E', legendFontSize: 12 },
-    { name: 'How to Train Your Dragon', tickets: 1654, color: '#F97316', legendFontColor: '#1A1A2E', legendFontSize: 12 },
-  ],
-  ticketsByDay: [
-    { day: 'Mon', tickets: 3250 },
-    { day: 'Tue', tickets: 2890 },
-    { day: 'Wed', tickets: 3412 },
-    { day: 'Thu', tickets: 3876 },
-    { day: 'Fri', tickets: 5234 },
-    { day: 'Sat', tickets: 6845 },
-    { day: 'Sun', tickets: 5949 },
-  ],
-  recentTransactions: [
-    { id: 1, movieName: 'Avengers: Doomsday', tickets: 3, total: 225000, date: '2024-01-15', user: 'Nguyễn Văn A' },
-    { id: 2, movieName: 'Lilo & Stitch', tickets: 2, total: 150000, date: '2024-01-15', user: 'Trần Thị B' },
-    { id: 3, movieName: 'Mission: Impossible 8', tickets: 4, total: 300000, date: '2024-01-14', user: 'Lê Văn C' },
-    { id: 4, movieName: 'Avengers: Doomsday', tickets: 1, total: 75000, date: '2024-01-14', user: 'Phạm Thị D' },
-    { id: 5, movieName: 'Minecraft Movie', tickets: 2, total: 150000, date: '2024-01-13', user: 'Hoàng Văn E' },
-  ],
-};
-
-// 🔴 Dữ liệu theo THÁNG
-const MONTH_DATA = {
-  totalTickets: 125678,
-  totalRevenue: 9425850000,
-  ticketsByMovie: [
-    { name: 'Avengers: Doomsday', tickets: 21500, color: '#FF6B6B', legendFontColor: '#1A1A2E', legendFontSize: 12 },
-    { name: 'Lilo & Stitch', tickets: 16800, color: '#4ECDC4', legendFontColor: '#1A1A2E', legendFontSize: 12 },
-    { name: 'Mission: Impossible 8', tickets: 14200, color: '#A78BFA', legendFontColor: '#1A1A2E', legendFontSize: 12 },
-    { name: 'Minecraft Movie', tickets: 12300, color: '#F59E0B', legendFontColor: '#1A1A2E', legendFontSize: 12 },
-    { name: 'Snow White', tickets: 8900, color: '#60A5FA', legendFontColor: '#1A1A2E', legendFontSize: 12 },
-    { name: 'How to Train Your Dragon', tickets: 7600, color: '#F97316', legendFontColor: '#1A1A2E', legendFontSize: 12 },
-  ],
-  ticketsByDay: [
-    { day: 'Tuần 1', tickets: 28500 },
-    { day: 'Tuần 2', tickets: 31200 },
-    { day: 'Tuần 3', tickets: 29800 },
-    { day: 'Tuần 4', tickets: 36178 },
-  ],
-  recentTransactions: [
-    { id: 1, movieName: 'Avengers: Doomsday', tickets: 45, total: 3375000, date: '2024-01-28', user: 'Nguyễn Văn A' },
-    { id: 2, movieName: 'Lilo & Stitch', tickets: 38, total: 2850000, date: '2024-01-25', user: 'Trần Thị B' },
-    { id: 3, movieName: 'Mission: Impossible 8', tickets: 52, total: 3900000, date: '2024-01-22', user: 'Lê Văn C' },
-    { id: 4, movieName: 'Avengers: Doomsday', tickets: 29, total: 2175000, date: '2024-01-20', user: 'Phạm Thị D' },
-    { id: 5, movieName: 'Minecraft Movie', tickets: 34, total: 2550000, date: '2024-01-18', user: 'Hoàng Văn E' },
-  ],
-};
-
-// 🔴 Dữ liệu theo NĂM
-const YEAR_DATA = {
-  totalTickets: 1523456,
-  totalRevenue: 114259200000,
-  ticketsByMovie: [
-    { name: 'Avengers: Doomsday', tickets: 285000, color: '#FF6B6B', legendFontColor: '#1A1A2E', legendFontSize: 12 },
-    { name: 'Lilo & Stitch', tickets: 198000, color: '#4ECDC4', legendFontColor: '#1A1A2E', legendFontSize: 12 },
-    { name: 'Mission: Impossible 8', tickets: 175000, color: '#A78BFA', legendFontColor: '#1A1A2E', legendFontSize: 12 },
-    { name: 'Minecraft Movie', tickets: 156000, color: '#F59E0B', legendFontColor: '#1A1A2E', legendFontSize: 12 },
-    { name: 'Snow White', tickets: 125000, color: '#60A5FA', legendFontColor: '#1A1A2E', legendFontSize: 12 },
-    { name: 'How to Train Your Dragon', tickets: 98000, color: '#F97316', legendFontColor: '#1A1A2E', legendFontSize: 12 },
-  ],
-  ticketsByDay: [
-    { day: 'Tháng 1', tickets: 125678 },
-    { day: 'Tháng 2', tickets: 142890 },
-    { day: 'Tháng 3', tickets: 156789 },
-    { day: 'Tháng 4', tickets: 148900 },
-    { day: 'Tháng 5', tickets: 167890 },
-    { day: 'Tháng 6', tickets: 178900 },
-    { day: 'Tháng 7', tickets: 189000 },
-    { day: 'Tháng 8', tickets: 175600 },
-    { day: 'Tháng 9', tickets: 158900 },
-    { day: 'Tháng 10', tickets: 145600 },
-    { day: 'Tháng 11', tickets: 152300 },
-    { day: 'Tháng 12', tickets: 205678 },
-  ],
-  recentTransactions: [
-    { id: 1, movieName: 'Avengers: Doomsday', tickets: 1250, total: 93750000, date: '2024-12-25', user: 'Khách hàng VIP' },
-    { id: 2, movieName: 'Lilo & Stitch', tickets: 980, total: 73500000, date: '2024-12-24', user: 'Khách hàng VIP' },
-    { id: 3, movieName: 'Mission: Impossible 8', tickets: 1100, total: 82500000, date: '2024-12-23', user: 'Khách hàng VIP' },
-    { id: 4, movieName: 'Avengers: Doomsday', tickets: 890, total: 66750000, date: '2024-12-22', user: 'Khách hàng VIP' },
-    { id: 5, movieName: 'Minecraft Movie', tickets: 750, total: 56250000, date: '2024-12-21', user: 'Khách hàng VIP' },
-  ],
+const EMPTY_DATA = {
+  totalTickets: 0,
+  totalRevenue: 0,
+  ticketsByMovie: [],
+  ticketsByDay: [],
+  recentTransactions: [],
 };
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -117,23 +34,21 @@ const { width: screenWidth } = Dimensions.get('window');
 const TotalTicketsScreen: React.FC<Props> = ({ navigation }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'year'>('week');
-  const [ticketsData, setTicketsData] = useState(WEEK_DATA);
+  const [ticketsData, setTicketsData] = useState(EMPTY_DATA);
 
   // 🔴 HÀM LẤY DỮ LIỆU THEO THỜI GIAN
-  const fetchTicketStats = (period: 'week' | 'month' | 'year') => {
+  const fetchTicketStats = async (period: 'week' | 'month' | 'year') => {
     setIsLoading(true);
     
-    // Giả lập loading
-    setTimeout(() => {
-      if (period === 'week') {
-        setTicketsData(WEEK_DATA);
-      } else if (period === 'month') {
-        setTicketsData(MONTH_DATA);
-      } else {
-        setTicketsData(YEAR_DATA);
-      }
+    try {
+      // TODO: Gọi API lấy thống kê vé
+      // const data = await ticketService.getTicketStats(period);
+      // setTicketsData(data);
+    } catch (error) {
+      console.error('Error fetching ticket stats:', error);
+    } finally {
       setIsLoading(false);
-    }, 500);
+    }
   };
 
   // 🔴 KHI CHỌN PERIOD, TỰ ĐỘNG CẬP NHẬT DỮ LIỆU
@@ -153,10 +68,10 @@ const TotalTicketsScreen: React.FC<Props> = ({ navigation }) => {
 
   // Dữ liệu cho biểu đồ đường
   const lineChartData = {
-    labels: ticketsData.ticketsByDay.map(item => item.day),
+    labels: ticketsData.ticketsByDay.length > 0 ? ticketsData.ticketsByDay.map((item: any) => item.day) : [''],
     datasets: [
       {
-        data: ticketsData.ticketsByDay.map(item => item.tickets),
+        data: ticketsData.ticketsByDay.length > 0 ? ticketsData.ticketsByDay.map((item: any) => item.tickets) : [0],
         color: (opacity = 1) => `rgba(255, 204, 0, ${opacity})`,
         strokeWidth: 2,
       },
@@ -165,10 +80,10 @@ const TotalTicketsScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   // Dữ liệu cho biểu đồ tròn
-  const pieChartData = ticketsData.ticketsByMovie.map(movie => ({
+  const pieChartData = ticketsData.ticketsByMovie.map((movie: any) => ({
     name: movie.name.length > 15 ? movie.name.substring(0, 12) + '...' : movie.name,
     population: movie.tickets,
-    color: movie.color,
+    color: movie.color || '#FFCC00',
     legendFontColor: '#1A1A2E',
     legendFontSize: 11,
   }));
@@ -296,7 +211,7 @@ const TotalTicketsScreen: React.FC<Props> = ({ navigation }) => {
             <Text style={[styles.tableCell, styles.tableCellTickets]}>Vé đã bán</Text>
             <Text style={[styles.tableCell, styles.tableCellRevenue]}>Doanh thu</Text>
           </View>
-          {ticketsData.ticketsByMovie.map((movie, index) => (
+          {ticketsData.ticketsByMovie.map((movie: any, index: number) => (
             <View key={movie.name} style={styles.tableRow}>
               <Text style={[styles.tableCell, styles.tableCellRank, styles.rankNumber]}>{index + 1}</Text>
               <Text style={[styles.tableCell, styles.tableCellName]} numberOfLines={1}>{movie.name}</Text>
@@ -317,7 +232,7 @@ const TotalTicketsScreen: React.FC<Props> = ({ navigation }) => {
             <Text style={[styles.transactionCell, styles.transactionCellTickets]}>Vé</Text>
             <Text style={[styles.transactionCell, styles.transactionCellAmount]}>Tổng</Text>
           </View>
-          {ticketsData.recentTransactions.map((transaction) => (
+          {ticketsData.recentTransactions.map((transaction: any) => (
             <View key={transaction.id} style={styles.transactionRow}>
               <Text style={[styles.transactionCell, styles.transactionCellDate]}>{transaction.date.split('-')[2]}/{transaction.date.split('-')[1]}</Text>
               <Text style={[styles.transactionCell, styles.transactionCellMovie]} numberOfLines={1}>{transaction.movieName}</Text>

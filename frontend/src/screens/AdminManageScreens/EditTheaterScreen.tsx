@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,6 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert,
   Keyboard,
   TouchableWithoutFeedback,
   Platform,
@@ -18,17 +17,19 @@ import { RootStackParamList } from '../../types';
 import useAlertStore from '../../store/useAlertStore';
 import theaterService from '../../services/theaterService';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'AddTheater'>;
+type Props = NativeStackScreenProps<RootStackParamList, 'EditTheater'>;
 
-const AddTheaterScreen: React.FC<Props> = ({ navigation }) => {
+const EditTheaterScreen: React.FC<Props> = ({ navigation, route }) => {
+  const { theater } = route.params;
+
   // Thông tin cơ bản
-  const [theaterName, setTheaterName] = useState('');
-  const [address, setAddress] = useState('');
+  const [theaterName, setTheaterName] = useState(theater?.name || '');
+  const [address, setAddress] = useState(theater?.address || '');
   
   const [isLoading, setIsLoading] = useState(false);
 
-  // Hàm xử lý thêm rạp
-  const handleAddTheater = async () => {
+  // Hàm xử lý cập nhật rạp
+  const handleUpdateTheater = async () => {
     Keyboard.dismiss();
     
     // Validation
@@ -44,14 +45,14 @@ const AddTheaterScreen: React.FC<Props> = ({ navigation }) => {
     setIsLoading(true);
     
     try {
-      await theaterService.createTheater({
+      await theaterService.updateTheater(theater.id, {
         name: theaterName,
         address: address,
       });
       
       useAlertStore.getState().showAlert(
         'Thành công', 
-        'Rạp đã được thêm thành công!', 
+        'Thông tin rạp đã được cập nhật!', 
         {
           type: 'success',
           buttons: [{ 
@@ -62,10 +63,10 @@ const AddTheaterScreen: React.FC<Props> = ({ navigation }) => {
       );
       
     } catch (error: any) {
-      console.error('Error adding theater:', error);
+      console.error('Error updating theater:', error);
       useAlertStore.getState().showAlert(
         'Lỗi', 
-        error.message || 'Không thể thêm rạp, vui lòng thử lại sau', 
+        error.message || 'Không thể cập nhật rạp, vui lòng thử lại sau', 
         { type: 'error' }
       );
     } finally {
@@ -83,7 +84,7 @@ const AddTheaterScreen: React.FC<Props> = ({ navigation }) => {
         >
           <Ionicons name="arrow-back" size={24} color="#8A7851" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Thêm Rạp Mới</Text>
+        <Text style={styles.headerTitle}>Sửa Rạp</Text>
         <View style={styles.placeholder} />
       </View>
 
@@ -94,7 +95,7 @@ const AddTheaterScreen: React.FC<Props> = ({ navigation }) => {
       >
         <View style={styles.card}>
           
-          <Text style={styles.sectionTitle}>Thông tin cơ bản</Text>
+          <Text style={styles.sectionTitle}>Thông tin rạp</Text>
           
           {/* Tên rạp */}
           <View style={styles.inputWrapper}>
@@ -123,18 +124,18 @@ const AddTheaterScreen: React.FC<Props> = ({ navigation }) => {
 
           <TouchableOpacity 
             style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
-            onPress={handleAddTheater}
+            onPress={handleUpdateTheater}
             disabled={isLoading}
           >
             {isLoading ? (
               <>
                 <Ionicons name="hourglass-outline" size={20} color="#1A1A2E" />
-                <Text style={styles.submitButtonText}>Đang xử lý...</Text>
+                <Text style={styles.submitButtonText}>Đang lưu...</Text>
               </>
             ) : (
               <>
-                <Ionicons name="add-circle-outline" size={20} color="#1A1A2E" />
-                <Text style={styles.submitButtonText}>Thêm Rạp</Text>
+                <Ionicons name="save-outline" size={20} color="#1A1A2E" />
+                <Text style={styles.submitButtonText}>Lưu Thay Đổi</Text>
               </>
             )}
           </TouchableOpacity>
@@ -222,25 +223,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#1A1A2E',
   },
-  rowContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  halfInput: {
-    flex: 1,
-  },
-  textAreaWrapper: {
-    alignItems: 'flex-start',
-    paddingTop: 12,
-  },
-  textAreaIcon: {
-    marginTop: 4,
-  },
-  textArea: {
-    height: 100,
-    textAlignVertical: 'top',
-  },
   submitButton: {
     backgroundColor: '#FFCC00',
     paddingVertical: 14,
@@ -266,4 +248,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AddTheaterScreen;
+export default EditTheaterScreen;

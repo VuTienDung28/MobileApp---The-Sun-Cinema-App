@@ -17,6 +17,7 @@ import useAuthStore from '../../store/useAuthStore';
 import useAlertStore from '../../store/useAlertStore';
 
 import movieService, { MovieListItem } from '../../services/movieService';
+import theaterService, { CinemaListItemDto } from '../../services/theaterService';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AdminHome'>;
 
@@ -64,18 +65,7 @@ const getMovieStatus = (releaseDate: string): MovieStatus => {
   }
 };
 
-// Interface cho Theater
-interface TheaterItem {
-  id: number;
-  name: string;
-  address: string;
-  hotline: string;
-  email: string;
-  totalScreens: number;
-  totalSeats: number;
-  openingTime: string;
-  closingTime: string;
-}
+
 
 // ─── Movie Card Component ─────────────────────────────────────────────────────
 const MovieCard: React.FC<{
@@ -154,14 +144,18 @@ const MovieCard: React.FC<{
   );
 };
 
-// ─── Theater Card Component ─────────────────────────────────────────────────────
 const TheaterCard: React.FC<{
-  theater: TheaterItem;
+  theater: CinemaListItemDto;
   index: number;
+  navigation: any;
   onDelete: (id: number, name: string) => void;
-}> = ({ theater, index, onDelete }) => {
+}> = ({ theater, index, navigation, onDelete }) => {
   return (
-    <View style={styles.theaterCard}>
+    <TouchableOpacity 
+      style={styles.theaterCard}
+      activeOpacity={0.8}
+      onPress={() => navigation.navigate('TheaterDetail', { cinemaId: theater.id, cinemaName: theater.name })}
+    >
       <View style={styles.theaterIconContainer}>
         <Ionicons name="business-outline" size={30} color="#FFCC00" />
       </View>
@@ -171,22 +165,14 @@ const TheaterCard: React.FC<{
           <Ionicons name="location-outline" size={12} color="#8A7851" />
           <Text style={styles.theaterAddress} numberOfLines={1}>{theater.address}</Text>
         </View>
-        <View style={styles.theaterStats}>
-          <View style={styles.theaterStat}>
-            <Ionicons name="tv-outline" size={12} color="#FFCC00" />
-            <Text style={styles.theaterStatText}>{theater.totalScreens} phòng</Text>
-          </View>
-          <View style={styles.theaterStat}>
-            <Ionicons name="people-outline" size={12} color="#FFCC00" />
-            <Text style={styles.theaterStatText}>{theater.totalSeats} ghế</Text>
-          </View>
-          <View style={styles.theaterStat}>
-            <Ionicons name="call-outline" size={12} color="#FFCC00" />
-            <Text style={styles.theaterStatText}>{theater.hotline}</Text>
-          </View>
-        </View>
       </View>
       <View style={styles.theaterActions}>
+        <TouchableOpacity 
+          style={styles.theaterEditButton}
+          onPress={() => navigation.navigate('EditTheater', { theater })}
+        >
+          <Ionicons name="pencil-outline" size={18} color="#4ECDC4" />
+        </TouchableOpacity>
         <TouchableOpacity 
           style={styles.theaterDeleteButton}
           onPress={() => onDelete(theater.id, theater.name)}
@@ -194,7 +180,7 @@ const TheaterCard: React.FC<{
           <Ionicons name="trash-outline" size={18} color="#FF6B6B" />
         </TouchableOpacity>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
@@ -204,7 +190,7 @@ const AdminHomeScreen: React.FC<Props> = ({ navigation }) => {
   const [movieStatusFilter, setMovieStatusFilter] = useState<MovieStatus>('nowShowing');
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [movies, setMovies] = useState<MovieListItem[]>([]);
-  const [theaters, setTheaters] = useState<TheaterItem[]>([]);
+  const [theaters, setTheaters] = useState<CinemaListItemDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Lấy danh sách phim
@@ -240,47 +226,14 @@ const AdminHomeScreen: React.FC<Props> = ({ navigation }) => {
     return movies.filter(movie => getMovieStatus(movie.releaseDate) === 'comingSoon').length;
   };
 
-  // Lấy danh sách rạp (mock data)
+  // Lấy danh sách rạp
   const fetchTheaters = async () => {
     try {
-      const mockTheaters: TheaterItem[] = [
-        {
-          id: 1,
-          name: 'THE SUN CINEMA - Quận 1',
-          address: '123 Đường Lê Lợi, Quận 1, TP.HCM',
-          hotline: '02812345678',
-          email: 'quan1@thesun.vn',
-          totalScreens: 8,
-          totalSeats: 1200,
-          openingTime: '08:00',
-          closingTime: '23:59',
-        },
-        {
-          id: 2,
-          name: 'THE SUN CINEMA - Quận 7',
-          address: '456 Đường Nguyễn Thị Thập, Quận 7, TP.HCM',
-          hotline: '02887654321',
-          email: 'quan7@thesun.vn',
-          totalScreens: 6,
-          totalSeats: 850,
-          openingTime: '09:00',
-          closingTime: '23:00',
-        },
-        {
-          id: 3,
-          name: 'THE SUN CINEMA - Thủ Đức',
-          address: '789 Đường Võ Văn Ngân, Thủ Đức, TP.HCM',
-          hotline: '02811223344',
-          email: 'thuduc@thesun.vn',
-          totalScreens: 5,
-          totalSeats: 700,
-          openingTime: '08:30',
-          closingTime: '22:30',
-        },
-      ];
-      setTheaters(mockTheaters);
+      const data = await theaterService.getAllTheaters();
+      setTheaters(data);
     } catch (error) {
       console.error('Error fetching theaters:', error);
+      useAlertStore.getState().showAlert('Lỗi', 'Không thể tải danh sách rạp', { type: 'error' });
     }
   };
 
@@ -345,8 +298,13 @@ const AdminHomeScreen: React.FC<Props> = ({ navigation }) => {
           { 
             text: 'Xóa ngay', 
             onPress: async () => {
-              useAlertStore.getState().showAlert('Thành công', 'Đã xóa rạp thành công!', { type: 'success' });
-              fetchTheaters();
+              try {
+                await theaterService.deleteTheater(id);
+                useAlertStore.getState().showAlert('Thành công', 'Đã xóa rạp thành công!', { type: 'success' });
+                fetchTheaters();
+              } catch (error: any) {
+                useAlertStore.getState().showAlert('Lỗi', error.message || 'Lỗi khi xóa rạp', { type: 'error' });
+              }
             }
           }
         ]
@@ -477,6 +435,7 @@ const AdminHomeScreen: React.FC<Props> = ({ navigation }) => {
                 key={theater.id} 
                 theater={theater} 
                 index={index}
+                navigation={navigation}
                 onDelete={handleDeleteTheater}
               />
             ))}
@@ -791,10 +750,13 @@ const styles = StyleSheet.create({
   },
   theaterActions: {
     flexDirection: 'row',
-    gap: 12,
-    paddingLeft: 15,
+    gap: 8,
+    paddingLeft: 12,
     borderLeftWidth: 1,
     borderLeftColor: '#F0F0F0',
+  },
+  theaterEditButton: {
+    padding: 6,
   },
   theaterDeleteButton: {
     padding: 6,

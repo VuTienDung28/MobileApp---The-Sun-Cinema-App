@@ -70,7 +70,11 @@ export type RootStackParamList = {
   MovieDetail: { movieId: number };
   MovieList: undefined;
   AddTheater: undefined;
+  EditTheater: { theater: any };
+  AddShowtime: { cinemaId: number, cinemaName: string };
   TotalTickets: undefined;
+  TheaterDetail: { cinemaId: number; cinemaName: string };
+  SeatLayoutManage: { cinemaId: number; roomId: number; roomName: string };
 
   Profile: undefined;
   Menu: undefined;
