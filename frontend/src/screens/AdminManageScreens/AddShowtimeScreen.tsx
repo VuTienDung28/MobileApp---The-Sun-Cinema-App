@@ -167,19 +167,60 @@ const AddShowtimeScreen: React.FC<Props> = ({ navigation, route }) => {
 
           {/* Date & Time Selection */}
           <Text style={styles.label}>Thời gian chiếu</Text>
-          <View style={styles.dateTimeRow}>
-            <TouchableOpacity style={[styles.selectBox, { flex: 1, marginBottom: 0 }]} onPress={() => setShowDatePicker(true)}>
-              <Ionicons name="calendar-outline" size={20} color="#8A7851" style={styles.selectIcon} />
-              <Text style={styles.selectText}>{formatDate(startTime)}</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={[styles.selectBox, { flex: 1, marginBottom: 0 }]} onPress={() => setShowTimePicker(true)}>
-              <Ionicons name="time-outline" size={20} color="#8A7851" style={styles.selectIcon} />
-              <Text style={styles.selectText}>{formatTime(startTime)}</Text>
-            </TouchableOpacity>
-          </View>
+          {Platform.OS === 'web' ? (
+            <View style={styles.dateTimeRow}>
+              <View style={[styles.selectBox, { flex: 1, marginBottom: 0 }]}>
+                <Ionicons name="calendar-outline" size={20} color="#8A7851" style={styles.selectIcon} />
+                {/* @ts-ignore */}
+                <input
+                  type="date"
+                  style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 15 }}
+                  value={startTime.toISOString().split('T')[0]}
+                  onChange={(e) => {
+                    const dateStr = e.target.value;
+                    if (dateStr) {
+                      const newDate = new Date(startTime);
+                      const [y, m, d] = dateStr.split('-');
+                      newDate.setFullYear(parseInt(y), parseInt(m) - 1, parseInt(d));
+                      setStartTime(newDate);
+                    }
+                  }}
+                />
+              </View>
+              <View style={[styles.selectBox, { flex: 1, marginBottom: 0 }]}>
+                <Ionicons name="time-outline" size={20} color="#8A7851" style={styles.selectIcon} />
+                {/* @ts-ignore */}
+                <input
+                  type="time"
+                  style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 15 }}
+                  value={`${startTime.getHours().toString().padStart(2, '0')}:${startTime.getMinutes().toString().padStart(2, '0')}`}
+                  onChange={(e) => {
+                    const timeStr = e.target.value;
+                    if (timeStr) {
+                      const newDate = new Date(startTime);
+                      const [h, min] = timeStr.split(':');
+                      newDate.setHours(parseInt(h), parseInt(min));
+                      setStartTime(newDate);
+                    }
+                  }}
+                />
+              </View>
+            </View>
+          ) : (
+            <View style={styles.dateTimeRow}>
+              <TouchableOpacity style={[styles.selectBox, { flex: 1, marginBottom: 0 }]} onPress={() => setShowDatePicker(true)}>
+                <Ionicons name="calendar-outline" size={20} color="#8A7851" style={styles.selectIcon} />
+                <Text style={styles.selectText}>{formatDate(startTime)}</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity style={[styles.selectBox, { flex: 1, marginBottom: 0 }]} onPress={() => setShowTimePicker(true)}>
+                <Ionicons name="time-outline" size={20} color="#8A7851" style={styles.selectIcon} />
+                <Text style={styles.selectText}>{formatTime(startTime)}</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
-          {showDatePicker && (
+          {!Platform.isTV && Platform.OS !== 'web' && showDatePicker && (
             <DateTimePicker
               value={startTime}
               mode="date"
@@ -195,7 +236,7 @@ const AddShowtimeScreen: React.FC<Props> = ({ navigation, route }) => {
             />
           )}
 
-          {showTimePicker && (
+          {!Platform.isTV && Platform.OS !== 'web' && showTimePicker && (
             <DateTimePicker
               value={startTime}
               mode="time"

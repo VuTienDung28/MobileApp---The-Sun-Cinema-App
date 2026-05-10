@@ -255,10 +255,19 @@ const TheaterDetailScreen: React.FC<Props> = ({ navigation, route }) => {
             <Text style={styles.emptyText}>Không có suất chiếu nào trong ngày này</Text>
           </View>
         ) : (
-          showtimesByMovie.map((movie) => (
+          showtimesByMovie.map((movie) => {
+            const getImageUrl = (url: string) => {
+              if (!url) return 'https://via.placeholder.com/50x75';
+              if (url.startsWith('http')) return url;
+              // If it's a relative URL, it's from MinIO (port 9000)
+              const baseIp = process.env.EXPO_PUBLIC_BASE_IP || 'localhost';
+              return `http://${baseIp}:9000${url.startsWith('/') ? '' : '/'}${url}`;
+            };
+
+            return (
             <View key={movie.movieId} style={styles.movieShowtimeCard}>
               <View style={styles.movieHeader}>
-                <Image source={{ uri: movie.movieThumbnailUrl }} style={styles.movieThumb} />
+                <Image source={{ uri: getImageUrl(movie.movieThumbnailUrl) }} style={styles.movieThumb} />
                 <View style={styles.movieInfo}>
                   <Text style={styles.movieTitle}>{movie.movieTitle}</Text>
                   <View style={styles.movieMeta}>
@@ -272,11 +281,12 @@ const TheaterDetailScreen: React.FC<Props> = ({ navigation, route }) => {
 
               <View style={styles.slotsGrid}>
                 {movie.showtimes.map((slot) => {
-                  const startTime = new Date(slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                  const startTimeStr = new Date(slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                  const endTimeStr = new Date(slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                   return (
                     <View key={slot.id} style={styles.slotCard}>
                       <View style={styles.slotMain}>
-                        <Text style={styles.slotTime}>{startTime}</Text>
+                        <Text style={styles.slotTime}>{`${startTimeStr} - ${endTimeStr}`}</Text>
                         <Text style={styles.slotRoom}>{slot.roomName}</Text>
                       </View>
                       <TouchableOpacity 
@@ -290,7 +300,7 @@ const TheaterDetailScreen: React.FC<Props> = ({ navigation, route }) => {
                 })}
               </View>
             </View>
-          ))
+          )})
         )}
       </ScrollView>
     </View>
@@ -481,20 +491,18 @@ const styles = StyleSheet.create({
   slotCard: {
     width: '31%',
     flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#F8F9FA',
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    overflow: 'hidden',
+    padding: 8,
   },
-  slotMain: { flex: 1, paddingVertical: 8, paddingHorizontal: 4, alignItems: 'center' },
-  slotTime: { fontSize: 14, fontWeight: '700', color: '#1A1A2E', marginBottom: 2 },
-  slotRoom: { fontSize: 10, color: '#6B7280' },
+  slotMain: { flex: 1, alignItems: 'center' },
+  slotTime: { fontSize: 13, fontWeight: '700', color: '#1A1A2E', marginBottom: 2 },
+  slotRoom: { fontSize: 11, color: '#6B7280' },
   slotDeleteBtn: {
-    backgroundColor: '#FEE2E2',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 4,
+    padding: 2,
   },
 
   // Modal Room Form
