@@ -15,6 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types';
+import useAlertStore from '../../store/useAlertStore';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AddTheater'>;
 
@@ -34,40 +35,91 @@ const AddTheaterScreen: React.FC<Props> = ({ navigation }) => {
   
   const [isLoading, setIsLoading] = useState(false);
 
+  // Hàm xử lý thêm rạp
   const handleAddTheater = async () => {
     Keyboard.dismiss();
     
     // Validation
     if (!theaterName || !address || !hotline || !totalScreens || !totalSeats) {
-      Alert.alert('Lỗi', 'Vui lòng điền đầy đủ thông tin bắt buộc');
+      useAlertStore.getState().showAlert(
+        'Thiếu thông tin', 
+        'Vui lòng điền đầy đủ thông tin bắt buộc', 
+        { type: 'warning' }
+      );
       return;
     }
 
     // Validate hotline format
     const phoneRegex = /^[0-9]{10,11}$/;
     if (!phoneRegex.test(hotline.replace(/\s/g, ''))) {
-      Alert.alert('Lỗi', 'Số hotline không hợp lệ (phải là 10-11 số)');
+      useAlertStore.getState().showAlert(
+        'Lỗi', 
+        'Số hotline không hợp lệ (phải là 10-11 số)', 
+        { type: 'error' }
+      );
       return;
     }
 
     // Validate email if provided
     if (email && !email.includes('@')) {
-      Alert.alert('Lỗi', 'Email không hợp lệ');
+      useAlertStore.getState().showAlert(
+        'Lỗi', 
+        'Email không hợp lệ', 
+        { type: 'error' }
+      );
+      return;
+    }
+
+    // Validate số lượng phòng chiếu và ghế
+    const screens = parseInt(totalScreens);
+    const seats = parseInt(totalSeats);
+    
+    if (isNaN(screens) || screens <= 0) {
+      useAlertStore.getState().showAlert(
+        'Lỗi', 
+        'Số lượng phòng chiếu phải là số dương', 
+        { type: 'error' }
+      );
+      return;
+    }
+    
+    if (isNaN(seats) || seats <= 0) {
+      useAlertStore.getState().showAlert(
+        'Lỗi', 
+        'Tổng số ghế phải là số dương', 
+        { type: 'error' }
+      );
       return;
     }
 
     setIsLoading(true);
     
-    setTimeout(() => {
+    try {
+      // TODO: Gọi API thêm rạp sau này
+      // const response = await theaterService.createTheater({
+      //   name: theaterName,
+      //   address: address,
+      //   hotline: hotline,
+      //   email: email || null,
+      //   description: description,
+      //   totalScreens: screens,
+      //   totalSeats: seats,
+      //   openingTime: openingTime,
+      //   closingTime: closingTime,
+      // });
+      
+      // Giả lập API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
       const newTheater = {
-        id: Date.now().toString(),
+        id: Date.now(),
         name: theaterName,
         address: address,
         hotline: hotline,
         email: email || null,
         description: description,
-        totalScreens: parseInt(totalScreens),
-        totalSeats: parseInt(totalSeats),
+        totalScreens: screens,
+        totalSeats: seats,
         openingTime: openingTime,
         closingTime: closingTime,
         createdAt: new Date().toISOString(),
@@ -75,14 +127,28 @@ const AddTheaterScreen: React.FC<Props> = ({ navigation }) => {
       
       console.log('New Theater:', newTheater);
       
-      Alert.alert(
-        'Thành công',
-        'Rạp đã được thêm thành công!',
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
+      useAlertStore.getState().showAlert(
+        'Thành công', 
+        'Rạp đã được thêm thành công!', 
+        {
+          type: 'success',
+          buttons: [{ 
+            text: 'OK', 
+            onPress: () => navigation.navigate('AdminHome', { refreshTheaters: true } as never) 
+          }]
+        }
       );
       
+    } catch (error: any) {
+      console.error('Error adding theater:', error);
+      useAlertStore.getState().showAlert(
+        'Lỗi', 
+        error.message || 'Không thể thêm rạp, vui lòng thử lại sau', 
+        { type: 'error' }
+      );
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const Content = (
@@ -217,7 +283,8 @@ const AddTheaterScreen: React.FC<Props> = ({ navigation }) => {
             <Ionicons name="document-text-outline" size={20} color="#FFCC00" style={[styles.inputIcon, styles.textAreaIcon]} />
             <TextInput
               style={[styles.input, styles.textArea]}
-              placeholder="Mô tả thêm về rạp"
+              placeholder="Mô tả thêm về rạp (vị trí, tiện ích, dịch vụ...)"
+
               placeholderTextColor="#BDBDBD"
               multiline
               numberOfLines={4}
@@ -232,7 +299,10 @@ const AddTheaterScreen: React.FC<Props> = ({ navigation }) => {
             disabled={isLoading}
           >
             {isLoading ? (
-              <Text style={styles.submitButtonText}>Đang xử lý...</Text>
+              <>
+                <Ionicons name="hourglass-outline" size={20} color="#1A1A2E" />
+                <Text style={styles.submitButtonText}>Đang xử lý...</Text>
+              </>
             ) : (
               <>
                 <Ionicons name="add-circle-outline" size={20} color="#1A1A2E" />
