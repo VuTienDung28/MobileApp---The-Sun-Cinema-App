@@ -53,30 +53,30 @@ namespace backend.Services.Implements
             if (!showtimeList.Any())
                 return Enumerable.Empty<ShowtimesByCinemaDto>();
 
-            // Group theo Cinema
-            var grouped = showtimeList
-                .GroupBy(s => s.Room.Cinema)
-                .Select(async cinemaGroup =>
+            var result = new List<ShowtimesByCinemaDto>();
+
+            // Group theo Cinema (chạy tuần tự để tránh lỗi DbContext đa luồng)
+            foreach (var cinemaGroup in showtimeList.GroupBy(s => s.Room.CinemaId))
+            {
+                var cinema = cinemaGroup.First().Room.Cinema;
+                var slots = new List<ShowtimeSlotDto>();
+
+                foreach (var s in cinemaGroup)
                 {
-                    var cinema = cinemaGroup.Key;
-                    var slots = new List<ShowtimeSlotDto>();
+                    var booked = await _showtimeRepository.CountBookedSeatsAsync(s.Id);
+                    slots.Add(MapToSlot(s, booked));
+                }
 
-                    foreach (var s in cinemaGroup)
-                    {
-                        var booked = await _showtimeRepository.CountBookedSeatsAsync(s.Id);
-                        slots.Add(MapToSlot(s, booked));
-                    }
-
-                    return new ShowtimesByCinemaDto
-                    {
-                        CinemaId = cinema.Id,
-                        CinemaName = cinema.Name,
-                        CinemaAddress = cinema.Address,
-                        Showtimes = slots.OrderBy(s => s.StartTime).ToList()
-                    };
+                result.Add(new ShowtimesByCinemaDto
+                {
+                    CinemaId = cinema.Id,
+                    CinemaName = cinema.Name,
+                    CinemaAddress = cinema.Address,
+                    Showtimes = slots.OrderBy(s => s.StartTime).ToList()
                 });
+            }
 
-            return await Task.WhenAll(grouped);
+            return result;
         }
 
         // =============================================
@@ -91,32 +91,32 @@ namespace backend.Services.Implements
             if (!showtimeList.Any())
                 return Enumerable.Empty<ShowtimesByMovieDto>();
 
-            // Group theo Movie
-            var grouped = showtimeList
-                .GroupBy(s => s.Movie)
-                .Select(async movieGroup =>
+            var result = new List<ShowtimesByMovieDto>();
+
+            // Group theo Movie (chạy tuần tự để tránh lỗi DbContext đa luồng)
+            foreach (var movieGroup in showtimeList.GroupBy(s => s.Movie.Id))
+            {
+                var movie = movieGroup.First().Movie;
+                var slots = new List<ShowtimeSlotDto>();
+
+                foreach (var s in movieGroup)
                 {
-                    var movie = movieGroup.Key;
-                    var slots = new List<ShowtimeSlotDto>();
+                    var booked = await _showtimeRepository.CountBookedSeatsAsync(s.Id);
+                    slots.Add(MapToSlot(s, booked));
+                }
 
-                    foreach (var s in movieGroup)
-                    {
-                        var booked = await _showtimeRepository.CountBookedSeatsAsync(s.Id);
-                        slots.Add(MapToSlot(s, booked));
-                    }
-
-                    return new ShowtimesByMovieDto
-                    {
-                        MovieId = movie.Id,
-                        MovieTitle = movie.Title,
-                        MovieThumbnailUrl = movie.ThumbnailPosterUrl,
-                        MovieDuration = movie.Duration,
-                        AgeRestriction = movie.AgeRestriction,
-                        Showtimes = slots.OrderBy(s => s.StartTime).ToList()
-                    };
+                result.Add(new ShowtimesByMovieDto
+                {
+                    MovieId = movie.Id,
+                    MovieTitle = movie.Title,
+                    MovieThumbnailUrl = movie.ThumbnailPosterUrl,
+                    MovieDuration = movie.Duration,
+                    AgeRestriction = movie.AgeRestriction,
+                    Showtimes = slots.OrderBy(s => s.StartTime).ToList()
                 });
+            }
 
-            return await Task.WhenAll(grouped);
+            return result;
         }
 
         // =============================================
