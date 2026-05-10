@@ -63,12 +63,14 @@ export type RootStackParamList = {
   Register: undefined;
   UserHome: undefined;
   AdminHome: undefined;
+  AdminMenu: undefined; 
 
   AddMovie: undefined;
   EditMovie: { movie: any };
   MovieDetail: { movieId: number };
   MovieList: undefined;
   AddTheater: undefined;
+  TotalTickets: undefined;
 
   Profile: undefined;
   Menu: undefined;

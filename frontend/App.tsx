@@ -22,6 +22,8 @@ import MovieListScreen from './src/screens/Movie/MovieListScreen';
 import AddMovieScreen from './src/screens/AdminManageScreens/AddMovieScreen';  
 import EditMovieScreen from './src/screens/AdminManageScreens/EditMovieScreen';
 import AddTheaterScreen from './src/screens/AdminManageScreens/AddTheaterScreen';
+import AdminMenuScreen from './src/screens/Menu/AdminMenuScreen';
+import TotalTicketsScreen from './src/screens/Tickets/TotalTicketsScreen';
 
 // Imports store, components & types
 import useAuthStore from './src/store/useAuthStore';
@@ -61,7 +63,9 @@ export default function App() {
                     <Stack.Screen name="EditMovie" component={EditMovieScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="MovieDetail" component={MovieDetailScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="AddTheater" component={AddTheaterScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="TotalTickets" component={TotalTicketsScreen} />
                     <Stack.Screen name="Profile" component={ProfileScreen} />
+                    <Stack.Screen name="AdminMenu" component={AdminMenuScreen} />
                     <Stack.Screen name="VerifyPassword" component={VerifyPasswordScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ headerShown: false }} />
