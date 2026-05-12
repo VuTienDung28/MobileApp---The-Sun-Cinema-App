@@ -6,33 +6,37 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
+  ActivityIndicator,
 } from "react-native";
 import { Image } from "expo-image";
-import { Ionicons, Feather } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 
 import movieService, { MovieListItem } from "../../services/movieService";
-import { ActivityIndicator } from "react-native";
 import useAuthStore from "../../store/useAuthStore";
 import { getImageUrl } from "../../utils/imageUtils";
+import AppSideMenu from "../../components/AppSideMenu";
 
 const { width } = Dimensions.get("window");
-
 
 const formatDuration = (minutes: number) => {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
+
   if (h > 0 && m > 0) return `${h} giờ ${m} phút`;
   if (h > 0) return `${h} giờ`;
+
   return `${m} phút`;
 };
 
 const formatDate = (dateString: string) => {
   if (!dateString) return "Sắp chiếu";
+
   const date = new Date(dateString);
   const day = date.getDate();
   const month = date.getMonth() + 1;
   const year = date.getFullYear();
+
   return `${day} Thg ${month}, ${year}`;
 };
 
@@ -44,20 +48,28 @@ export default function UserHomeScreen() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [movies, setMovies] = useState<MovieListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showMenu, setShowMenu] = useState(false);
 
   const fetchMovies = async (tab: string) => {
     setIsLoading(true);
+
     try {
       let data: MovieListItem[] = [];
+
       if (tab === "Đang chiếu") {
         data = await movieService.getNowShowing();
       } else {
         data = await movieService.getComingSoon();
       }
+
       console.log(`[UserHome] Loaded ${data.length} movies for tab: ${tab}`);
+
       if (data.length > 0) {
-        console.log(`[UserHome] Sample movie: ${data[0].title}, Date: ${data[0].releaseDate}`);
+        console.log(
+          `[UserHome] Sample movie: ${data[0].title}, Date: ${data[0].releaseDate}`
+        );
       }
+
       setMovies(data);
     } catch (error) {
       console.error("Error fetching movies:", error);
@@ -110,16 +122,17 @@ export default function UserHomeScreen() {
             <View style={styles.headerRight}>
               <TouchableOpacity
                 activeOpacity={0.7}
-                onPress={() => navigation.navigate("Home")}
+                onPress={() => navigation.navigate("UserHome")}
               >
                 <Ionicons name="home-outline" size={27} color="#4A2C13" />
               </TouchableOpacity>
 
               <TouchableOpacity
                 activeOpacity={0.7}
-                onPress={() => navigation.navigate("Menu")}
+                onPress={() => setShowMenu(true)}
+                style={styles.headerIcon}
               >
-                <Feather name="menu" size={30} color="#4A2C13" />
+                <Ionicons name="menu" size={34} color="#4A2C13" />
               </TouchableOpacity>
             </View>
           </View>
@@ -134,7 +147,10 @@ export default function UserHomeScreen() {
                 Nhiều phim hay - Ưu đãi mỗi ngày
               </Text>
 
-              <TouchableOpacity style={styles.bannerBtn}>
+              <TouchableOpacity
+                style={styles.bannerBtn}
+                onPress={() => navigation.navigate("Promotion")}
+              >
                 <Text style={styles.bannerBtnText}>XEM NGAY ›</Text>
               </TouchableOpacity>
             </View>
@@ -144,7 +160,11 @@ export default function UserHomeScreen() {
 
           <View style={styles.tabs}>
             <TouchableOpacity
-              style={[styles.tab, activeTab === "Đang chiếu" && styles.tabActive, { flex: 1 }]}
+              style={[
+                styles.tab,
+                activeTab === "Đang chiếu" && styles.tabActive,
+                { flex: 1 },
+              ]}
               onPress={() => changeTab("Đang chiếu")}
             >
               <Ionicons
@@ -152,6 +172,7 @@ export default function UserHomeScreen() {
                 size={18}
                 color={activeTab === "Đang chiếu" ? "#fff" : "#4A2C13"}
               />
+
               <Text
                 style={
                   activeTab === "Đang chiếu"
@@ -164,7 +185,11 @@ export default function UserHomeScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.tab, activeTab === "Sắp chiếu" && styles.tabActive, { flex: 1, marginLeft: 10 }]}
+              style={[
+                styles.tab,
+                activeTab === "Sắp chiếu" && styles.tabActive,
+                { flex: 1, marginLeft: 10 },
+              ]}
               onPress={() => changeTab("Sắp chiếu")}
             >
               <Ionicons
@@ -172,6 +197,7 @@ export default function UserHomeScreen() {
                 size={18}
                 color={activeTab === "Sắp chiếu" ? "#fff" : "#4A2C13"}
               />
+
               <Text
                 style={
                   activeTab === "Sắp chiếu"
@@ -185,7 +211,7 @@ export default function UserHomeScreen() {
           </View>
 
           {isLoading ? (
-            <View style={{ height: 340, justifyContent: 'center' }}>
+            <View style={styles.loadingBox}>
               <ActivityIndicator size="large" color="#FFB800" />
             </View>
           ) : movies.length > 0 ? (
@@ -199,6 +225,7 @@ export default function UserHomeScreen() {
                 const index = Math.round(
                   e.nativeEvent.contentOffset.x / (width * 0.62)
                 );
+
                 setActiveIndex(Math.max(0, Math.min(index, movies.length - 1)));
               }}
             >
@@ -211,16 +238,18 @@ export default function UserHomeScreen() {
                     activeIndex === index && styles.movieCardActive,
                   ]}
                   onPress={() => {
-                  if (activeIndex === index) {
-                    navigation.navigate('MovieDetail', { movieId: item.id });
-                  } else {
-                    setActiveIndex(index);
-                  }
-                }}
+                    if (activeIndex === index) {
+                      navigation.navigate("MovieDetail", {
+                        movieId: item.id,
+                      });
+                    } else {
+                      setActiveIndex(index);
+                    }
+                  }}
                 >
-                  <Image 
-                    source={{ uri: getImageUrl(item.thumbnailPosterUrl) }} 
-                    style={styles.poster} 
+                  <Image
+                    source={{ uri: getImageUrl(item.thumbnailPosterUrl) }}
+                    style={styles.poster}
                     contentFit="cover"
                     transition={200}
                     cachePolicy="disk"
@@ -229,8 +258,8 @@ export default function UserHomeScreen() {
               ))}
             </ScrollView>
           ) : (
-            <View style={{ height: 340, justifyContent: 'center', alignItems: 'center' }}>
-              <Text style={{ color: '#4A2C13', opacity: 0.6 }}>Chưa có phim nào</Text>
+            <View style={styles.emptyBox}>
+              <Text style={styles.emptyText}>Chưa có phim nào</Text>
             </View>
           )}
 
@@ -243,20 +272,28 @@ export default function UserHomeScreen() {
 
                 <View style={styles.metaRow}>
                   <Ionicons name="time-outline" size={18} color="#4A2C13" />
-                  <Text style={styles.meta}>{formatDuration(activeMovie.duration)}</Text>
+
+                  <Text style={styles.meta}>
+                    {formatDuration(activeMovie.duration)}
+                  </Text>
 
                   <Text style={styles.divide}>|</Text>
 
                   <Ionicons name="calendar-outline" size={18} color="#4A2C13" />
+
                   <Text numberOfLines={1} style={styles.meta}>
                     {formatDate(activeMovie.releaseDate)}
                   </Text>
                 </View>
               </View>
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.bookBtn}
-                onPress={() => navigation.navigate('MovieDetail', { movieId: activeMovie.id })}
+                onPress={() =>
+                  navigation.navigate("MovieDetail", {
+                    movieId: activeMovie.id,
+                  })
+                }
               >
                 <Text style={styles.bookText}>Đặt Vé</Text>
               </TouchableOpacity>
@@ -277,6 +314,12 @@ export default function UserHomeScreen() {
           </TouchableOpacity>
         </ScrollView>
       </View>
+
+      <AppSideMenu
+        visible={showMenu}
+        onClose={() => setShowMenu(false)}
+        navigation={navigation}
+      />
     </View>
   );
 }
@@ -333,6 +376,11 @@ const styles = StyleSheet.create({
   headerRight: {
     flexDirection: "row",
     gap: 16,
+    alignItems: "center",
+  },
+
+  headerIcon: {
+    justifyContent: "center",
     alignItems: "center",
   },
 
@@ -428,6 +476,22 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "900",
     fontSize: 15,
+  },
+
+  loadingBox: {
+    height: 340,
+    justifyContent: "center",
+  },
+
+  emptyBox: {
+    height: 340,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  emptyText: {
+    color: "#4A2C13",
+    opacity: 0.6,
   },
 
   movieRow: {
