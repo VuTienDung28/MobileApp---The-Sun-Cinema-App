@@ -30,7 +30,6 @@ export interface TokenRequest {
   refreshToken: string;
 }
 
-
 export interface ApiResponse<T> {
   isSuccess: boolean;
   message: string;
@@ -61,23 +60,90 @@ export interface DropdownOption {
 export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
+
   UserHome: undefined;
   AdminHome: undefined;
-  AdminMenu: undefined; 
+  AdminMenu: undefined;
 
   AddMovie: undefined;
-  EditMovie: { movie: any };
-  MovieDetail: { movieId: number };
+
+  EditMovie: {
+    movie: any;
+  };
+
+  MovieDetail: {
+    movieId: number;
+  };
+
   MovieList: undefined;
+
+  MovieBooking: {
+    movieId?: number;
+    movieTitle?: string;
+    movieName?: string;
+    age?: string;
+    type?: string;
+    date?: string;
+  };
+
   AddTheater: undefined;
-  EditTheater: { theater: any };
-  AddShowtime: { cinemaId: number, cinemaName: string };
+
+  EditTheater: {
+    theater: any;
+  };
+
+  AddShowtime: {
+    cinemaId: number;
+    cinemaName: string;
+  };
+
+  SeatSelection: {
+    cinemaName: string;
+    movieId?: number;
+    movieName: string;
+    age: string;
+    type: string;
+    time: string;
+    date: string;
+  };
+
   TotalTickets: undefined;
-  TheaterDetail: { cinemaId: number; cinemaName: string };
-  SeatLayoutManage: { cinemaId: number; roomId: number; roomName: string };
+
+  TheaterDetail: {
+    cinemaId: number;
+    cinemaName: string;
+  };
+  TotalTicketsUser:
+  | {
+    cinemaName?: string;
+    movieName?: string;
+    age?: string;
+    type?: string;
+    time?: string;
+    date?: string;
+    selectedSeats?: string[];
+    seatTotal?: number;
+    foodTotal?: number;
+    finalTotal?: number;
+    foods?: Record<number, number>;
+  }
+  | undefined;
+
+  SeatLayoutManage: {
+    cinemaId: number;
+    roomId: number;
+    roomName: string;
+  };
+
+  TheaterShowtime: {
+    cinemaName: string;
+  };
 
   Profile: undefined;
+
   Menu: undefined;
+
+  Theater: undefined;
 
   VerifyPassword:
   | {
@@ -87,23 +153,34 @@ export type RootStackParamList = {
   }
   | undefined;
 
-  // EditProfile nhận toàn bộ profile object để pre-populate form
   EditProfile:
   | {
-      profile?: {
-        fullName: string;
-        email: string;
-        phoneNumber?: string;
-        dateOfBirth?: string;
-        gender?: string;
-        province?: string;
-        district?: string;
-        avatarUrl?: string;
-      };
-    }
+    profile?: {
+      fullName: string;
+      email: string;
+      phoneNumber?: string;
+      dateOfBirth?: string;
+      gender?: string;
+      province?: string;
+      district?: string;
+      avatarUrl?: string;
+    };
+  }
   | undefined;
 
   ChangePassword: undefined;
+
   PaymentPin: undefined;
+
   TransactionHistory: undefined;
+
+  Promotion: undefined;
+
+  PromotionDetail: {
+    promotionId?: number;
+    promotion?: any;
+  };
+
+  FAQ: undefined;
+  Settings: undefined;
 };

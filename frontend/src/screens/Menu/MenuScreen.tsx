@@ -20,15 +20,26 @@ export default function MenuScreen() {
         <View style={styles.container}>
             <ScrollView showsVerticalScrollIndicator={false}>
                 <View style={styles.topBar}>
-                    <View style={styles.bellBox}>
-                        <Ionicons name="notifications-outline" size={42} color="#5A351B" />
-                        <View style={styles.newBadge}>
-                            <Text style={styles.newText}>NEW</Text>
-                        </View>
-                    </View>
+                    <TouchableOpacity
+                        style={styles.homeBtn}
+                        onPress={() => navigation.navigate("Home")}
+                    >
+                        <Ionicons
+                            name="arrow-back"
+                            size={34}
+                            color="#5A351B"
+                        />
+                    </TouchableOpacity>
 
-                    <TouchableOpacity>
-                        <Ionicons name="settings-outline" size={48} color="#5A351B" />
+                    <TouchableOpacity
+                        style={styles.settingBtn}
+                        onPress={() => navigation.navigate("Settings")}
+                    >
+                        <Ionicons
+                            name="settings-outline"
+                            size={42}
+                            color="#5A351B"
+                        />
                     </TouchableOpacity>
                 </View>
 
@@ -46,8 +57,13 @@ export default function MenuScreen() {
                         )}
                     </View>
 
-                    <Text style={styles.name}>{fullName || 'Người dùng'}</Text>
-                    <Text style={styles.role}>{role === 'Admin' ? 'Quản trị viên' : 'Thành viên'}</Text>
+                    <Text style={styles.name}>
+                        {fullName || "Người dùng"}
+                    </Text>
+
+                    <Text style={styles.role}>
+                        {role === "Admin" ? "Quản trị viên" : "Thành viên"}
+                    </Text>
 
                     <View style={styles.memberBadge}>
                         <Ionicons name="star" size={30} color="#fff" />
@@ -77,7 +93,7 @@ export default function MenuScreen() {
                             />
                         }
                         title="Đặt vé theo Rạp"
-                        onPress={() => navigation.navigate("Cinema")}
+                        onPress={() => navigation.navigate("Theater")}
                     />
                 </View>
 
@@ -102,10 +118,20 @@ function MenuAction({
     onPress: () => void;
 }) {
     return (
-        <TouchableOpacity style={styles.actionItem} activeOpacity={0.75} onPress={onPress}>
+        <TouchableOpacity
+            style={styles.actionItem}
+            activeOpacity={0.75}
+            onPress={onPress}
+        >
             <View style={styles.actionIcon}>{icon}</View>
+
             <Text style={styles.actionText}>{title}</Text>
-            <Ionicons name="chevron-forward" size={38} color="#D29A1D" />
+
+            <Ionicons
+                name="chevron-forward"
+                size={38}
+                color="#D29A1D"
+            />
         </TouchableOpacity>
     );
 }
@@ -124,24 +150,24 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
 
-    bellBox: {
-        position: "relative",
+    homeBtn: {
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: "#FFF",
+        justifyContent: "center",
+        alignItems: "center",
+        elevation: 4,
     },
 
-    newBadge: {
-        position: "absolute",
-        top: -10,
-        right: -34,
-        backgroundColor: "#D99A16",
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-        borderRadius: 13,
-    },
-
-    newText: {
-        color: "#fff",
-        fontSize: 13,
-        fontWeight: "900",
+    settingBtn: {
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: "#FFF",
+        justifyContent: "center",
+        alignItems: "center",
+        elevation: 4,
     },
 
     profileArea: {
@@ -161,6 +187,7 @@ const styles = StyleSheet.create({
     avatarEmoji: {
         fontSize: 108,
     },
+
     avatarImage: {
         width: 190,
         height: 190,
@@ -256,14 +283,14 @@ const styles = StyleSheet.create({
         right: 135,
         bottom: 28,
         fontSize: 78,
-        opacity: 0.55,
+        opacity: 0.45,
     },
 
     clapper: {
         position: "absolute",
-        right: -18,
-        bottom: 60,
-        fontSize: 150,
-        opacity: 0.35,
+        right: 18,
+        bottom: 12,
+        fontSize: 130,
+        opacity: 0.45,
     },
 });

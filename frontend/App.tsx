@@ -4,11 +4,13 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, View } from 'react-native';
 
 // Imports navigation & screens
+import TheaterScreen from "./src/screens/Theater/TheaterScreen";
 import MainTabNavigator from "./src/navigation/MainTabNavigator";
 import LoginScreen from './src/screens/Auth/LoginScreen';
 import RegisterScreen from './src/screens/Auth/RegisterScreen';
 import AdminHomeScreen from './src/screens/Home/AdminHomeScreen';
-import UserHomeScreen from './src/screens/Home/UserHomeScreen'; 
+import UserHomeScreen from './src/screens/Home/UserHomeScreen';
+import TheaterShowtimeScreen from "./src/screens/Theater/TheaterShowtimeScreen";
 import ProfileScreen from './src/screens/Profile/ProfileScreen';
 import VerifyPasswordScreen from './src/screens/Profile/VerifyPasswordScreen';
 import EditProfileScreen from './src/screens/Profile/EditProfileScreen';
@@ -17,9 +19,16 @@ import PaymentPinScreen from './src/screens/Profile/PaymentPinScreen';
 import TransactionHistoryScreen from './src/screens/Profile/TransactionHistoryScreen';
 import MovieDetailScreen from './src/screens/Movie/MovieDetailScreen';
 import MovieListScreen from './src/screens/Movie/MovieListScreen';
-
+import SeatSelectionScreen from "./src/screens/Tickets/SeatSelectionScreen";
+import PromotionScreen from "./src/screens/Promotion/PromotionScreen";
+import PromotionDetailScreen from "./src/screens/Promotion/PromotionDetailScreen";
+import SettingsScreen from "./src/screens/Menu/SettingsScreen";
+import FAQScreen from "./src/screens/Menu/FAQScreen";
+import MovieBookingScreen from "./src/screens/Movie/MovieBookingScreen";
+import FoodDrinkScreen from './src/screens/Tickets/FoodDrinkScreen';
+import TotalTicketsScreenUser from './src/screens/Tickets/TotalTicketsScreenUser';
 // Các màn hình quản lý dành cho Admin
-import AddMovieScreen from './src/screens/AdminManageScreens/AddMovieScreen';  
+import AddMovieScreen from './src/screens/AdminManageScreens/AddMovieScreen';
 import EditMovieScreen from './src/screens/AdminManageScreens/EditMovieScreen';
 import AddTheaterScreen from './src/screens/AdminManageScreens/AddTheaterScreen';
 import EditTheaterScreen from './src/screens/AdminManageScreens/EditTheaterScreen';
@@ -28,7 +37,6 @@ import SeatLayoutManageScreen from './src/screens/AdminManageScreens/SeatLayoutM
 import AddShowtimeScreen from './src/screens/AdminManageScreens/AddShowtimeScreen';
 import AdminMenuScreen from './src/screens/Menu/AdminMenuScreen';
 import TotalTicketsScreen from './src/screens/Tickets/TotalTicketsScreen';
-
 // Imports store, components & types
 import useAuthStore from './src/store/useAuthStore';
 import CustomAlert from './src/components/CustomAlert';
@@ -87,11 +95,54 @@ export default function App() {
                     <Stack.Screen name="MovieDetail" component={MovieDetailScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="MovieList" component={MovieListScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="Profile" component={ProfileScreen} />
+                    <Stack.Screen name="Theater" component={TheaterScreen} />
+                    <Stack.Screen name="TheaterShowtime" component={TheaterShowtimeScreen} />
                     <Stack.Screen name="VerifyPassword" component={VerifyPasswordScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="PaymentPin" component={PaymentPinScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="TransactionHistory" component={TransactionHistoryScreen} options={{ headerShown: false }} />
+                    <Stack.Screen
+                        name="MovieBooking"
+                        component={MovieBookingScreen}
+                        options={{ headerShown: false }}
+                    />
+                    <Stack.Screen
+                        name="FAQ"
+                        component={FAQScreen}
+                        options={{ headerShown: false }}
+                    />
+                    <Stack.Screen
+                        name="Settings"
+                        component={SettingsScreen}
+                        options={{ headerShown: false }}
+                    />
+                    <Stack.Screen
+                        name="Promotion"
+                        component={PromotionScreen}
+                        options={{ headerShown: false }}
+                    />
+
+                    <Stack.Screen
+                        name="PromotionDetail"
+                        component={PromotionDetailScreen}
+                        options={{ headerShown: false }}
+                    />
+                    <Stack.Screen
+                        name="SeatSelection"
+                        component={SeatSelectionScreen}
+                        options={{ headerShown: false }}
+                    />
+                    <Stack.Screen
+                        name="FoodDrink"
+                        component={FoodDrinkScreen}
+                        options={{ headerShown: false }}
+                    />
+                    <Stack.Screen
+                        name="TotalTicketsUser"
+                        component={TotalTicketsScreenUser}
+                        options={{ headerShown: false }}
+                    />
                 </>
             )}
         </Stack.Navigator>

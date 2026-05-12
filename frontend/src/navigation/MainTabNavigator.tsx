@@ -1,30 +1,13 @@
 import React from "react";
-import { View, Text } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons, Feather } from "@expo/vector-icons";
 
 import UserHomeScreen from "../screens/Home/UserHomeScreen";
 import MyTicketsScreen from "../screens/Tickets/MyTicketsScreen";
 import MenuScreen from "../screens/Menu/MenuScreen";
+import TheaterScreen from "../screens/Theater/TheaterScreen";
 
 const Tab = createBottomTabNavigator();
-
-function EmptyScreen({ title }: { title: string }) {
-    return (
-        <View
-            style={{
-                flex: 1,
-                backgroundColor: "#FFF4CF",
-                justifyContent: "center",
-                alignItems: "center",
-            }}
-        >
-            <Text style={{ fontSize: 24, fontWeight: "900", color: "#4A2C13" }}>
-                {title}
-            </Text>
-        </View>
-    );
-}
 
 export default function MainTabNavigator() {
     return (
@@ -95,15 +78,14 @@ export default function MainTabNavigator() {
 
             <Tab.Screen
                 name="Cinema"
+                component={TheaterScreen}
                 options={{
                     title: "Rạp",
                     tabBarIcon: ({ color }) => (
                         <Feather name="map-pin" size={28} color={color} />
                     ),
                 }}
-            >
-                {() => <EmptyScreen title="Rạp" />}
-            </Tab.Screen>
+            />
 
             <Tab.Screen
                 name="Menu"
