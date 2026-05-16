@@ -9,61 +9,83 @@ import {
     Modal,
     Pressable,
     Linking,
+    Dimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { ReactNativeZoomableView } from '@openspacelabs/react-native-zoomable-view';
 import AppSideMenu from "../../components/AppSideMenu";
 
 export default function SeatSelectionScreen({ navigation, route }: any) {
-    const {
-        cinemaName = "The Sun Cinema",
-        movieName = "Tên phim",
-        age = "P",
-        type = "2D Phụ Đề Việt",
-        time = "20:00",
-        date = "12-05-2026",
-    } = route.params || {};
+    const cinemaName = route.params?.cinemaName || "The Sun Cinema";
+    const cinemaId = route.params?.cinemaId;
+    const roomId = route.params?.roomId;
+    const roomName = route.params?.roomName || "Cinema";
+    const movieName = route.params?.movieName || "Tên phim";
+    const age = route.params?.age || "P";
+    const type = route.params?.type || "2D Phụ Đề Việt";
+    const time = route.params?.time || "20:00";
+    const date = route.params?.date || "12-05-2026";
+    const showtimeId = route.params?.showtimeId;
 
-    const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
+    const [selectedSeats, setSelectedSeats] = useState<any[]>([]);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
+    
+    const [layout, setLayout] = useState<any>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
+    React.useEffect(() => {
+        if (!cinemaId || !roomId) return;
+        setIsLoading(true);
+        import('../../services/seatService').then(module => {
+            module.default.getSeatLayout(cinemaId, roomId).then(data => {
+                setLayout(data);
+                setIsLoading(false);
+            }).catch(e => {
+                console.log(e);
+                setIsLoading(false);
+            });
+        });
+    }, [cinemaId, roomId]);
+
+    /* MOCK DATA
     const rows = ["A", "B", "C", "D", "E", "F", "G", "H", "J", "L", "M", "N", "P"];
     const cols = [12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
 
     const bookedSeats = ["A12", "A11", "B10", "C8", "D6", "E5", "F4"];
     const vipRows = ["D", "E", "F", "G", "H", "J", "L", "M"];
     const sweetBoxRows = ["N", "P"];
+    */
+    const bookedSeats = ["A12", "A11", "B10", "C8", "D6", "E5", "F4"];
 
     const normalPrice = 75000;
     const vipPrice = 95000;
     const sweetBoxPrice = 120000;
 
-    const getSeatPrice = (seat: string) => {
-        const row = seat.charAt(0);
-
-        if (sweetBoxRows.includes(row)) return sweetBoxPrice;
-        if (vipRows.includes(row)) return vipPrice;
-
+    const getSeatPrice = (seatType: string) => {
+        if (seatType === 'Couple') return sweetBoxPrice;
+        if (seatType === 'VIP') return vipPrice;
         return normalPrice;
     };
 
-    const toggleSeat = (seat: string) => {
-        if (bookedSeats.includes(seat)) return;
+    const toggleSeat = (seat: any) => {
+        const seatName = `${seat.rowName}${seat.seatNumber}`;
+        if (bookedSeats.includes(seatName)) return;
 
-        if (selectedSeats.includes(seat)) {
-            setSelectedSeats(selectedSeats.filter((s) => s !== seat));
+        if (selectedSeats.find(s => s.id === seat.id)) {
+            setSelectedSeats(selectedSeats.filter((s) => s.id !== seat.id));
         } else {
             setSelectedSeats([...selectedSeats, seat]);
         }
     };
 
-    const getSeatStyle = (seat: string) => {
-        const row = seat.charAt(0);
-
-        if (bookedSeats.includes(seat)) return styles.bookedSeat;
-        if (selectedSeats.includes(seat)) return styles.selectedSeat;
-        if (sweetBoxRows.includes(row)) return styles.sweetSeat;
-        if (vipRows.includes(row)) return styles.vipSeat;
+    const getSeatStyle = (seat: any) => {
+        const seatName = `${seat.rowName}${seat.seatNumber}`;
+        if (bookedSeats.includes(seatName)) return styles.bookedSeat;
+        if (selectedSeats.find(s => s.id === seat.id)) return styles.selectedSeat;
+        
+        if (seat.type === 'Couple') return styles.sweetSeat;
+        if (seat.type === 'VIP') return styles.vipSeat;
 
         return styles.normalSeat;
     };
@@ -85,7 +107,7 @@ export default function SeatSelectionScreen({ navigation, route }: any) {
     };
 
     const totalPrice = selectedSeats.reduce((sum, seat) => {
-        return sum + getSeatPrice(seat);
+        return sum + getSeatPrice(seat.type);
     }, 0);
 
     const handleOpenConfirm = () => {
@@ -108,10 +130,18 @@ export default function SeatSelectionScreen({ navigation, route }: any) {
             type,
             time,
             date,
-            selectedSeats,
+            selectedSeats: selectedSeats.map(s => `${s.rowName}${s.seatNumber}`),
             totalPrice,
+            cinemaId,
+            roomId,
+            showtimeId
         });
     };
+
+    const numRows = layout ? Array.from(new Set(layout.seats.map((s: any) => s.rowName))).length : 10;
+    const numCols = layout?.totalColumns || 10;
+    const contentWidth = numCols * 36 + 60;
+    const contentHeight = numRows * 38 + 150; // ScreenBox + Banner + Seats
 
     return (
         <SafeAreaView style={styles.container}>
@@ -123,7 +153,7 @@ export default function SeatSelectionScreen({ navigation, route }: any) {
                 <View style={styles.headerInfo}>
                     <Text style={styles.cinemaName}>{cinemaName}</Text>
                     <Text style={styles.showtimeText}>
-                        Cinema 7   {date} {time}
+                        {roomName}   {date} {time}
                     </Text>
                 </View>
 
@@ -147,33 +177,86 @@ export default function SeatSelectionScreen({ navigation, route }: any) {
                     </Text>
                 </View>
 
-                <View style={styles.screenBox}>
-                    <Text style={styles.screenText}>MÀN HÌNH</Text>
-                </View>
+                <View style={styles.seatAreaContainer}>
+                    {layout ? (
+                        <ReactNativeZoomableView
+                            maxZoom={2.5}
+                            minZoom={Math.min(1, Dimensions.get('window').width / contentWidth)}
+                            zoomStep={0.5}
+                            initialZoom={Math.min(1, Dimensions.get('window').width / contentWidth)}
+                            bindToBorders={true}
+                            contentWidth={contentWidth}
+                            contentHeight={contentHeight}
+                            style={styles.zoomableView}
+                        >
+                            <View style={{ width: contentWidth, height: contentHeight, alignItems: 'center' }}>
+                                <View style={styles.screenBox}>
+                                <Text style={styles.screenText}>MÀN HÌNH</Text>
+                            </View>
 
-                <View style={styles.seatArea}>
-                    {rows.map((row) => (
-                        <View key={row} style={styles.seatRow}>
-                            {cols.map((col) => {
-                                const seat = `${row}${col}`;
+                            <View style={styles.seatArea}>
+                                {Array.from(new Set(layout.seats.map((s: any) => s.rowName))).map((rowName: any) => (
+                                    <View key={rowName} style={styles.seatRow}>
+                                        <Text style={styles.rowLabel}>{rowName}</Text>
+                                        <View style={styles.rowSeats}>
+                                            {(() => {
+                                                const renderedRow = [];
+                                                let skipNext = false;
+                                                for (let colIdx = 0; colIdx < layout.totalColumns; colIdx++) {
+                                                    if (skipNext) {
+                                                        skipNext = false;
+                                                        continue;
+                                                    }
+                                                    const seat = layout.seats.find((s: any) => s.rowName === rowName && s.columnIndex === colIdx + 1);
+                                                    if (!seat) {
+                                                        renderedRow.push(<View key={colIdx} style={styles.emptySeat} />);
+                                                    } else {
+                                                        const seatName = `${seat.rowName}${seat.seatNumber}`;
+                                                        const isBooked = bookedSeats.includes(seatName);
 
-                                return (
-                                    <TouchableOpacity
-                                        key={seat}
-                                        style={[styles.seat, getSeatStyle(seat)]}
-                                        onPress={() => toggleSeat(seat)}
-                                    >
-                                        <Text style={styles.seatText}>{seat}</Text>
-                                    </TouchableOpacity>
-                                );
-                            })}
-                        </View>
-                    ))}
+                                                        if (seat.type === 'Couple') skipNext = true;
+                                                        renderedRow.push(
+                                                            <TouchableOpacity
+                                                                key={colIdx}
+                                                                style={[
+                                                                    styles.seat, 
+                                                                    getSeatStyle(seat),
+                                                                    seat.type === 'Couple' ? styles.seatCouple : null
+                                                                ]}
+                                                                onPress={() => toggleSeat(seat)}
+                                                                activeOpacity={isBooked ? 1 : 0.2}
+                                                            >
+                                                                {isBooked && (
+                                                                    <>
+                                                                        <View style={styles.crossLine1} />
+                                                                        <View style={styles.crossLine2} />
+                                                                    </>
+                                                                )}
+                                                                <Text style={styles.seatText}>{seat.seatNumber}</Text>
+                                                            </TouchableOpacity>
+                                                        );
+                                                    }
+                                                }
+                                                return renderedRow;
+                                            })()}
+                                        </View>
+                                        <Text style={styles.rowLabel}>{rowName}</Text>
+                                    </View>
+                                ))}
+                            </View>
+                            </View>
+                        </ReactNativeZoomableView>
+                    ) : (
+                        <Text style={{ textAlign: 'center', marginTop: 20 }}>{isLoading ? "Đang tải..." : "Chưa có sơ đồ ghế"}</Text>
+                    )}
                 </View>
 
                 <View style={styles.noteBox}>
                     <View style={styles.noteItem}>
-                        <View style={[styles.noteColor, styles.bookedSeat]} />
+                        <View style={[styles.noteColor, styles.bookedSeat, { justifyContent: 'center', alignItems: 'center' }]}>
+                            <View style={styles.crossLine1} />
+                            <View style={styles.crossLine2} />
+                        </View>
                         <Text style={styles.noteText}>Đã đặt</Text>
                     </View>
 
@@ -221,7 +304,7 @@ export default function SeatSelectionScreen({ navigation, route }: any) {
 
                     <Text style={styles.seatCountText}>
                         {selectedSeats.length > 0
-                            ? `${selectedSeats.length} ghế: ${selectedSeats.join(", ")}`
+                            ? `${selectedSeats.length} ghế: ${selectedSeats.map(s => `${s.rowName}${s.seatNumber}`).join(", ")}`
                             : "Chưa chọn ghế"}
                     </Text>
                 </View>
@@ -370,6 +453,16 @@ const styles = StyleSheet.create({
         fontWeight: "700",
     },
 
+    seatAreaContainer: {
+        height: 400, // Cấp đủ không gian dọc để có thể zoom và pan
+        width: "100%",
+    },
+
+    zoomableView: {
+        alignItems: "center",
+        justifyContent: "center",
+    },
+
     screenBox: {
         alignSelf: "center",
         marginTop: 18,
@@ -395,41 +488,85 @@ const styles = StyleSheet.create({
 
     seatRow: {
         flexDirection: "row",
+        alignItems: "center",
+        marginBottom: 8,
+    },
+
+    rowLabel: {
+        width: 20,
+        textAlign: "center",
+        fontWeight: "bold",
+        color: "#8A7851",
+    },
+
+    rowSeats: {
+        flexDirection: "row",
+        marginHorizontal: 10,
     },
 
     seat: {
-        width: 47,
-        height: 38,
+        width: 30,
+        height: 30,
         justifyContent: "center",
         alignItems: "center",
+        marginHorizontal: 3,
+        borderRadius: 4,
         borderWidth: 1,
         borderColor: "rgba(255,255,255,0.35)",
+        overflow: "hidden",
+    },
+
+    seatCouple: {
+        width: 66,
+    },
+
+    emptySeat: {
+        width: 30,
+        height: 30,
+        marginHorizontal: 3,
     },
 
     normalSeat: {
-        backgroundColor: "#3B2200",
+        backgroundColor: "#BDBDBD",
     },
 
     vipSeat: {
-        backgroundColor: "#FF9500",
+        backgroundColor: "#FFCC00",
     },
 
     sweetSeat: {
-        backgroundColor: "#8B6A00",
+        backgroundColor: "#9B59B6",
     },
 
     selectedSeat: {
-        backgroundColor: "#FFFBF0",
+        backgroundColor: "#E74C3C",
+        borderColor: "#C0392B",
     },
 
     bookedSeat: {
-        backgroundColor: "#F5F1E7",
+        backgroundColor: "#7F8C8D",
+    },
+
+    crossLine1: {
+        position: "absolute",
+        width: "150%",
+        height: 1.5,
+        backgroundColor: "#333",
+        transform: [{ rotate: "45deg" }],
+    },
+
+    crossLine2: {
+        position: "absolute",
+        width: "150%",
+        height: 1.5,
+        backgroundColor: "#333",
+        transform: [{ rotate: "-45deg" }],
     },
 
     seatText: {
-        color: "#FFFFFF",
-        fontSize: 16,
-        fontWeight: "600",
+        color: "#111",
+        fontSize: 10,
+        fontWeight: "bold",
     },
 
     noteBox: {
@@ -451,6 +588,8 @@ const styles = StyleSheet.create({
         width: 28,
         height: 28,
         marginRight: 8,
+        borderRadius: 4,
+        overflow: "hidden",
     },
 
     noteText: {

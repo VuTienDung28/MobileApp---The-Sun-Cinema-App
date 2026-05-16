@@ -125,6 +125,12 @@ namespace backend.DTOs
         /// <summary>Standard | VIP | Couple</summary>
         [Required(ErrorMessage = "Loại ghế không được để trống")]
         public string Type { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Danh sách các cột bị ẩn/khuyết (không tạo ghế ở vị trí này) cho riêng hàng này.
+        /// Dùng cho các rạp có góc bo tròn, vướng cột, hoặc hàng ghế ngắn hơn các hàng khác.
+        /// </summary>
+        public List<int>? HiddenColumns { get; set; }
     }
 
     /// <summary>
@@ -152,5 +158,10 @@ namespace backend.DTOs
         [Required]
         [MinLength(1, ErrorMessage = "Phải có ít nhất 1 hàng ghế")]
         public List<SeatRowConfigDto> Rows { get; set; } = new();
+
+        /// <summary>
+        /// Đổi chiều đánh số ghế (True: từ phải sang trái, False: từ trái sang phải)
+        /// </summary>
+        public bool IsNumberingFromRight { get; set; } = false;
     }
 }

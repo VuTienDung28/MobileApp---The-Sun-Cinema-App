@@ -5,6 +5,7 @@ export interface ShowtimeSlotDto {
   startTime: string;
   endTime: string;
   basePrice: number;
+  roomId: number;
   roomName: string;
   availableSeats: number;
 }
@@ -15,6 +16,13 @@ export interface ShowtimesByMovieDto {
   movieThumbnailUrl: string;
   movieDuration: number;
   ageRestriction: string;
+  showtimes: ShowtimeSlotDto[];
+}
+
+export interface ShowtimesByCinemaDto {
+  cinemaId: number;
+  cinemaName: string;
+  cinemaAddress: string;
   showtimes: ShowtimeSlotDto[];
 }
 
@@ -48,6 +56,12 @@ const showtimeService = {
     // date should be in format 'yyyy-MM-dd'
     const query = date ? `?date=${date}` : '';
     const response = await axiosClient.get(`/showtime/by-cinema/${cinemaId}${query}`);
+    return response.data;
+  },
+
+  getShowtimesByMovie: async (movieId: number, date?: string): Promise<ShowtimesByCinemaDto[]> => {
+    const query = date ? `?date=${date}` : '';
+    const response = await axiosClient.get(`/showtime/by-movie/${movieId}${query}`);
     return response.data;
   },
 

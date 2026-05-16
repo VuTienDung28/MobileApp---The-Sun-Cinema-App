@@ -15,9 +15,45 @@ export default function TheaterShowtimeScreen({ navigation, route }: any) {
     const [selectedDate, setSelectedDate] = useState(0);
     const [showMenu, setShowMenu] = useState(false);
 
-    const cinemaName =
-        route.params?.cinemaName || "The Sun Hồ Gươm";
+    const cinemaName = route.params?.cinemaName || "The Sun Hồ Gươm";
+    const cinemaId = route.params?.cinemaId;
 
+    const [realDates, setRealDates] = useState<any[]>([]);
+    const [realMovies, setRealMovies] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+
+    React.useEffect(() => {
+        const today = new Date();
+        const dArr = [];
+        const days = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+        for(let i = 0; i < 7; i++) {
+            const d = new Date(today);
+            d.setDate(today.getDate() + i);
+            dArr.push({
+                day: i === 0 ? "Hôm nay" : days[d.getDay()],
+                date: d.getDate(),
+                full: `${days[d.getDay()]}, ${d.getDate()} Tháng ${d.getMonth() + 1}, ${d.getFullYear()}`,
+                value: d.toISOString().split('T')[0]
+            });
+        }
+        setRealDates(dArr);
+    }, []);
+
+    React.useEffect(() => {
+        if (!cinemaId || realDates.length === 0) return;
+        setIsLoading(true);
+        import('../../services/showtimeService').then(module => {
+            module.default.getShowtimesByCinema(cinemaId, realDates[selectedDate].value).then(data => {
+                setRealMovies(data);
+                setIsLoading(false);
+            }).catch(e => {
+                console.log(e);
+                setIsLoading(false);
+            });
+        });
+    }, [cinemaId, selectedDate, realDates]);
+
+    /* MOCK DATA
     const dates = [
         { day: "Hôm nay", date: 10, full: "Chủ nhật, 10 Tháng 5, 2026" },
         { day: "T2", date: 11, full: "Thứ hai, 11 Tháng 5, 2026" },
@@ -58,6 +94,7 @@ export default function TheaterShowtimeScreen({ navigation, route }: any) {
             times: ["21:20", "23:30"],
         },
     ];
+    */
 
     return (
         <SafeAreaView style={styles.container}>
@@ -74,10 +111,20 @@ export default function TheaterShowtimeScreen({ navigation, route }: any) {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
+                {/* MOCK DATES
                 <View style={styles.dateRow}>
                     {dates.map((item, index) => {
-                        const isActive = selectedDate === index;
+                        ...
+                    })}
+                </View>
+                <Text style={styles.fullDate}>
+                    {dates[selectedDate].full}
+                </Text>
+                */}
 
+                <View style={styles.dateRow}>
+                    {realDates.map((item, index) => {
+                        const isActive = selectedDate === index;
                         return (
                             <TouchableOpacity
                                 key={index}
@@ -85,21 +132,8 @@ export default function TheaterShowtimeScreen({ navigation, route }: any) {
                                 onPress={() => setSelectedDate(index)}
                             >
                                 <Text style={styles.dayText}>{item.day}</Text>
-
-                                <View
-                                    style={
-                                        isActive
-                                            ? styles.activeDate
-                                            : styles.normalDate
-                                    }
-                                >
-                                    <Text
-                                        style={
-                                            isActive
-                                                ? styles.activeDateText
-                                                : styles.dateText
-                                        }
-                                    >
+                                <View style={isActive ? styles.activeDate : styles.normalDate}>
+                                    <Text style={isActive ? styles.activeDateText : styles.dateText}>
                                         {item.date}
                                     </Text>
                                 </View>
@@ -108,54 +142,60 @@ export default function TheaterShowtimeScreen({ navigation, route }: any) {
                     })}
                 </View>
 
-                <Text style={styles.fullDate}>
-                    {dates[selectedDate].full}
-                </Text>
+                {realDates.length > 0 && (
+                    <Text style={styles.fullDate}>
+                        {realDates[selectedDate].full}
+                    </Text>
+                )}
 
-                {movies.map((movie) => (
+                {isLoading && (
+                    <Text style={{ textAlign: 'center', marginTop: 20 }}>Đang tải...</Text>
+                )}
+
+                {!isLoading && realMovies.map((movie) => (
                     <View key={movie.movieId} style={styles.movieCard}>
                         <TouchableOpacity
                             style={styles.movieHeader}
-                            onPress={() =>
-                                navigation.navigate("MovieDetail", {
-                                    movieId: movie.movieId,
-                                })
-                            }
+                            onPress={() => navigation.navigate("MovieDetail", { movieId: movie.movieId })}
                         >
                             <Text style={styles.movieName}>
-                                {movie.name}{" "}
-                                <Text style={styles.age}>{movie.age}</Text>
+                                {movie.movieTitle}{" "}
+                                <Text style={styles.age}>{movie.ageRestriction || 'P'}</Text>
                             </Text>
 
-                            <Ionicons
-                                name="chevron-forward"
-                                size={22}
-                                color="#D69A00"
-                            />
+                            <Ionicons name="chevron-forward" size={22} color="#D69A00" />
                         </TouchableOpacity>
 
-                        <Text style={styles.typeText}>● {movie.type}</Text>
+                        <Text style={styles.typeText}>● 2D Phụ Đề Việt</Text>
 
                         <View style={styles.timeWrap}>
-                            {movie.times.map((time) => (
-                                <TouchableOpacity
-                                    key={time}
-                                    style={styles.timeBox}
-                                    onPress={() =>
-                                        navigation.navigate("SeatSelection", {
-                                            cinemaName: cinemaName,
-                                            movieId: movie.movieId,
-                                            movieName: movie.name,
-                                            age: movie.age,
-                                            type: movie.type,
-                                            time: time,
-                                            date: dates[selectedDate].full,
-                                        })
-                                    }
-                                >
-                                    <Text style={styles.timeText}>{time}</Text>
-                                </TouchableOpacity>
-                            ))}
+                            {movie.showtimes.map((st: any) => {
+                                const d = new Date(st.startTime);
+                                const timeStr = d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+                                return (
+                                    <TouchableOpacity
+                                        key={st.id}
+                                        style={styles.timeBox}
+                                        onPress={() =>
+                                            navigation.navigate("SeatSelection", {
+                                                cinemaName: cinemaName,
+                                                cinemaId: cinemaId,
+                                                movieId: movie.movieId,
+                                                movieName: movie.movieTitle,
+                                                age: movie.ageRestriction,
+                                                type: "2D Phụ Đề Việt",
+                                                time: timeStr,
+                                                date: realDates[selectedDate].full,
+                                                showtimeId: st.id,
+                                                roomId: st.roomId,
+                                                roomName: st.roomName
+                                            })
+                                        }
+                                    >
+                                        <Text style={styles.timeText}>{timeStr}</Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
                         </View>
                     </View>
                 ))}
