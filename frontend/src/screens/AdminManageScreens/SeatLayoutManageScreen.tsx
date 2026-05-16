@@ -16,7 +16,11 @@ import { RootStackParamList } from '../../types';
 import useAlertStore from '../../store/useAlertStore';
 import seatService, { RoomSeatLayoutDto, SeatDto, SeatRowConfigDto } from '../../services/seatService';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'SeatLayoutManage'>;
+interface RowConfigForm {
+  rowName: string;
+  type: string;
+  hiddenColsStr: string;
+}
 
 const SeatLayoutManageScreen: React.FC<Props> = ({ navigation, route }) => {
   const { cinemaId, roomId, roomName } = route.params;
@@ -28,13 +32,14 @@ const SeatLayoutManageScreen: React.FC<Props> = ({ navigation, route }) => {
   // Form states for Generate
   const [totalColumns, setTotalColumns] = useState('11');
   const [aisleAtColumns, setAisleAtColumns] = useState('4,8');
+  const [isNumberingFromRight, setIsNumberingFromRight] = useState(false);
   const [openDropdownIndex, setOpenDropdownIndex] = useState<number | null>(null);
   
   // default 3 rows config
-  const [rowConfigs, setRowConfigs] = useState<SeatRowConfigDto[]>([
-    { rowName: 'A', type: 'Standard' },
-    { rowName: 'B', type: 'Standard' },
-    { rowName: 'C', type: 'VIP' },
+  const [rowConfigs, setRowConfigs] = useState<RowConfigForm[]>([
+    { rowName: 'A', type: 'Standard', hiddenColsStr: '' },
+    { rowName: 'B', type: 'Standard', hiddenColsStr: '1,11' },
+    { rowName: 'C', type: 'VIP', hiddenColsStr: '' },
   ]);
 
   const fetchLayout = async () => {
@@ -96,7 +101,12 @@ const SeatLayoutManageScreen: React.FC<Props> = ({ navigation, route }) => {
       await seatService.generateSeats(cinemaId, roomId, {
         totalColumns: columns,
         aisleAtColumns: aisles,
-        rows: rowConfigs
+        isNumberingFromRight: isNumberingFromRight,
+        rows: rowConfigs.map(r => ({
+          rowName: r.rowName,
+          type: r.type,
+          hiddenColumns: r.hiddenColsStr ? r.hiddenColsStr.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n)) : []
+        }))
       });
       useAlertStore.getState().showAlert('Thành công', 'Tạo sơ đồ ghế thành công!', { type: 'success' });
       setIsModalVisible(false);
@@ -106,7 +116,7 @@ const SeatLayoutManageScreen: React.FC<Props> = ({ navigation, route }) => {
     }
   };
 
-  const updateRowConfig = (index: number, key: keyof SeatRowConfigDto, value: string) => {
+  const updateRowConfig = (index: number, key: keyof RowConfigForm, value: string) => {
     const newConfigs = [...rowConfigs];
     newConfigs[index] = { ...newConfigs[index], [key]: value };
     setRowConfigs(newConfigs);
@@ -114,7 +124,7 @@ const SeatLayoutManageScreen: React.FC<Props> = ({ navigation, route }) => {
 
   const addRowConfig = () => {
     const nextChar = String.fromCharCode(65 + rowConfigs.length); // A, B, C...
-    setRowConfigs([...rowConfigs, { rowName: nextChar, type: 'Standard' }]);
+    setRowConfigs([...rowConfigs, { rowName: nextChar, type: 'VIP', hiddenColsStr: '' }]);
   };
 
   const removeRowConfig = (index: number) => {
@@ -154,22 +164,33 @@ const SeatLayoutManageScreen: React.FC<Props> = ({ navigation, route }) => {
                 <View key={rowName} style={styles.seatRow}>
                   <Text style={styles.rowLabel}>{rowName}</Text>
                   <View style={styles.rowSeats}>
-                    {Array.from({ length: layout.totalColumns }).map((_, colIdx) => {
-                      const seat = layout.seats.find(s => s.rowName === rowName && s.columnIndex === colIdx);
-                      if (!seat) {
-                        // This is an aisle or empty space
-                        return <View key={colIdx} style={styles.emptySeat} />;
+                    {(() => {
+                      const renderedRow = [];
+                      let skipNext = false;
+                      for (let colIdx = 0; colIdx < layout.totalColumns; colIdx++) {
+                        if (skipNext) {
+                          skipNext = false;
+                          continue;
+                        }
+                        const seat = layout.seats.find(s => s.rowName === rowName && s.columnIndex === colIdx + 1);
+                        if (!seat) {
+                          // This is an aisle or empty space
+                          renderedRow.push(<View key={colIdx} style={styles.emptySeat} />);
+                        } else {
+                          if (seat.type === 'Couple') skipNext = true; // Ghế đôi chiếm 2 ô nên bỏ qua ô tiếp theo
+                          renderedRow.push(
+                            <View key={colIdx} style={[
+                              styles.seat, 
+                              seat.type === 'VIP' ? styles.seatVIP : styles.seatStandard,
+                              seat.type === 'Couple' ? styles.seatCouple : null
+                            ]}>
+                              <Text style={styles.seatNumber}>{seat.seatNumber}</Text>
+                            </View>
+                          );
+                        }
                       }
-                      return (
-                        <View key={colIdx} style={[
-                          styles.seat, 
-                          seat.type === 'VIP' ? styles.seatVIP : styles.seatStandard,
-                          seat.type === 'Couple' ? styles.seatCouple : null
-                        ]}>
-                          <Text style={styles.seatNumber}>{seat.seatNumber}</Text>
-                        </View>
-                      );
-                    })}
+                      return renderedRow;
+                    })()}
                   </View>
                   <Text style={styles.rowLabel}>{rowName}</Text>
                 </View>
@@ -184,6 +205,10 @@ const SeatLayoutManageScreen: React.FC<Props> = ({ navigation, route }) => {
               <View style={styles.legendItem}>
                 <View style={[styles.legendBox, styles.seatVIP]} />
                 <Text style={styles.legendText}>VIP</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendBox, styles.seatCouple, { width: 30 }]} />
+                <Text style={styles.legendText}>Couple</Text>
               </View>
             </View>
 
@@ -207,6 +232,24 @@ const SeatLayoutManageScreen: React.FC<Props> = ({ navigation, route }) => {
 
               <Text style={styles.inputLabel}>Vị trí cột lối đi (cách nhau bởi dấu phẩy, vd: 4,8)</Text>
               <TextInput style={styles.input} value={aisleAtColumns} onChangeText={setAisleAtColumns} keyboardType="numbers-and-punctuation" />
+
+              <View style={styles.directionToggleContainer}>
+                <Text style={styles.inputLabel}>Chiều đánh số ghế</Text>
+                <View style={styles.toggleGroup}>
+                  <TouchableOpacity 
+                    style={[styles.toggleBtn, !isNumberingFromRight && styles.toggleBtnActive]}
+                    onPress={() => setIsNumberingFromRight(false)}
+                  >
+                    <Text style={[styles.toggleBtnText, !isNumberingFromRight && styles.toggleBtnTextActive]}>Trái sang Phải</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[styles.toggleBtn, isNumberingFromRight && styles.toggleBtnActive]}
+                    onPress={() => setIsNumberingFromRight(true)}
+                  >
+                    <Text style={[styles.toggleBtnText, isNumberingFromRight && styles.toggleBtnTextActive]}>Phải sang Trái</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
 
               <View style={styles.rowHeader}>
                 <Text style={styles.inputLabel}>Cấu hình Hàng (từ trên xuống)</Text>
@@ -239,10 +282,18 @@ const SeatLayoutManageScreen: React.FC<Props> = ({ navigation, route }) => {
                       <Ionicons name="close-circle" size={24} color="#FF6B6B" />
                     </TouchableOpacity>
                   </View>
+                  
+                  <TextInput 
+                    style={[styles.input, { marginTop: 8, marginBottom: openDropdownIndex === idx ? 0 : 16, height: 40, fontSize: 13 }]} 
+                    value={cfg.hiddenColsStr} 
+                    onChangeText={t => updateRowConfig(idx, 'hiddenColsStr', t)} 
+                    placeholder="Các cột bị ẩn (vd: 1,11)" 
+                    keyboardType="numbers-and-punctuation"
+                  />
 
                   {openDropdownIndex === idx && (
                     <View style={styles.dropdownContainer}>
-                      {['Standard', 'VIP'].map(type => (
+                      {['Standard', 'VIP', 'Couple'].map(type => (
                         <TouchableOpacity 
                           key={type} 
                           style={styles.dropdownOption}
@@ -339,7 +390,7 @@ const styles = StyleSheet.create({
   },
   seatStandard: { backgroundColor: '#BDBDBD' },
   seatVIP: { backgroundColor: '#FFCC00' },
-  seatCouple: { width: 46, backgroundColor: '#FF6B6B' },
+  seatCouple: { width: 46, backgroundColor: '#9B59B6' }, // Màu tím cho ghế Couple
   emptySeat: { width: 20, height: 20, marginHorizontal: 3 },
   seatNumber: { fontSize: 8, fontWeight: 'bold', color: '#FFF' },
 
@@ -382,6 +433,13 @@ const styles = StyleSheet.create({
   cancelText: { fontWeight: '700', color: '#4B5563' },
   confirmBtn: { flex: 1, padding: 14, backgroundColor: '#FFCC00', borderRadius: 12, alignItems: 'center' },
   confirmText: { fontWeight: '700', color: '#1A1A2E' },
+
+  directionToggleContainer: { marginBottom: 16 },
+  toggleGroup: { flexDirection: 'row', backgroundColor: '#F3F4F6', borderRadius: 8, padding: 4 },
+  toggleBtn: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 6 },
+  toggleBtnActive: { backgroundColor: '#FFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
+  toggleBtnText: { fontSize: 13, color: '#4B5563', fontWeight: '500' },
+  toggleBtnTextActive: { color: '#FFCC00', fontWeight: '700' },
 
   dropdownContainer: {
     marginTop: 4,

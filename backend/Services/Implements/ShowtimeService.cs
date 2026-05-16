@@ -262,6 +262,7 @@ namespace backend.Services.Implements
                 StartTime = s.StartTime,
                 EndTime = CalculateEndTime(s),
                 BasePrice = s.BasePrice,
+                RoomId = s.RoomId,
                 RoomName = s.Room.Name,
                 AvailableSeats = totalSeats - bookedSeats
             };

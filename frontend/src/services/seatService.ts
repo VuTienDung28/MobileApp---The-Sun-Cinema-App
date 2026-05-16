@@ -18,12 +18,14 @@ export interface RoomSeatLayoutDto {
 export interface SeatRowConfigDto {
   rowName: string;
   type: string;
+  hiddenColumns?: number[];
 }
 
 export interface GenerateSeatsDto {
   totalColumns: number;
   aisleAtColumns: number[];
   rows: SeatRowConfigDto[];
+  isNumberingFromRight?: boolean;
 }
 
 const seatService = {
