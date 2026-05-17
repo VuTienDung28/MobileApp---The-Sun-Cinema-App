@@ -18,6 +18,7 @@ import useAlertStore from '../../store/useAlertStore';
 
 import movieService, { MovieListItem } from '../../services/movieService';
 import theaterService, { CinemaListItemDto } from '../../services/theaterService';
+import voucherService, { VoucherDto } from '../../services/voucherService';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AdminHome'>;
 
@@ -49,23 +50,18 @@ const getImageUrl = (url: string) => {
 };
 
 // Xác định trạng thái phim dựa vào ngày phát hành
-// Logic giống với UserHomeScreen
 const getMovieStatus = (releaseDate: string): MovieStatus => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const release = new Date(releaseDate);
   release.setHours(0, 0, 0, 0);
   
-  // Nếu ngày phát hành <= hôm nay => Đang chiếu
-  // Nếu ngày phát hành > hôm nay => Sắp chiếu
   if (release <= today) {
     return 'nowShowing';
   } else {
     return 'comingSoon';
   }
 };
-
-
 
 // ─── Movie Card Component ─────────────────────────────────────────────────────
 const MovieCard: React.FC<{
@@ -184,13 +180,70 @@ const TheaterCard: React.FC<{
   );
 };
 
+// ─── Voucher Card Component (thêm mới) ────────────────────────────────────────
+const VoucherCard: React.FC<{
+  voucher: VoucherDto;
+  onPress: () => void;
+}> = ({ voucher, onPress }) => {
+  const getStatusColor = () => {
+    const now = new Date();
+    const end = new Date(voucher.endDate);
+    if (!voucher.isActive) return '#999';
+    if (end < now) return '#FF6B6B';
+    return '#4ECDC4';
+  };
+
+  const getStatusText = () => {
+    const now = new Date();
+    const end = new Date(voucher.endDate);
+    if (!voucher.isActive) return 'Đã tắt';
+    if (end < now) return 'Hết hạn';
+    return 'Đang hoạt động';
+  };
+
+  const formatDiscount = () => {
+    if (voucher.discountType === 'percentage') {
+      return `${voucher.discountValue}%`;
+    }
+    return `${voucher.discountValue.toLocaleString()}đ`;
+  };
+
+  return (
+    <TouchableOpacity style={styles.voucherCard} onPress={onPress}>
+      <View style={styles.voucherCardHeader}>
+        <View style={styles.voucherCodeContainer}>
+          <Text style={styles.voucherCode}>{voucher.code}</Text>
+          {voucher.discountType === 'percentage' && (
+            <View style={styles.percentBadge}>
+              <Text style={styles.percentBadgeText}>%</Text>
+            </View>
+          )}
+        </View>
+        <View style={[styles.voucherStatus, { backgroundColor: getStatusColor() + '22' }]}>
+          <Text style={[styles.voucherStatusText, { color: getStatusColor() }]}>
+            {getStatusText()}
+          </Text>
+        </View>
+      </View>
+      <Text style={styles.voucherDesc} numberOfLines={1}>{voucher.description}</Text>
+      <View style={styles.voucherCardFooter}>
+        <Text style={styles.voucherDiscount}>
+          {formatDiscount()}
+        </Text>
+        <Text style={styles.voucherUsed}>Đã dùng: {voucher.usedCount}/{voucher.usageLimit}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+};
+
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 const AdminHomeScreen: React.FC<Props> = ({ navigation }) => {
-  const [activeTab, setActiveTab] = useState<'movies' | 'theaters'>('movies');
+  const [activeTab, setActiveTab] = useState<'movies' | 'theaters' | 'vouchers'>('movies');
   const [movieStatusFilter, setMovieStatusFilter] = useState<MovieStatus>('nowShowing');
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [movies, setMovies] = useState<MovieListItem[]>([]);
   const [theaters, setTheaters] = useState<CinemaListItemDto[]>([]);
+  const [vouchers, setVouchers] = useState<VoucherDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Lấy danh sách phim
@@ -237,21 +290,43 @@ const AdminHomeScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
+  // Lấy danh sách voucher
+  const fetchVouchers = async () => {
+    try {
+      const data = await voucherService.getAllVouchers();
+      setVouchers(data);
+    } catch (error) {
+      console.error('Error fetching vouchers:', error);
+    }
+  };
+
+  // Thống kê voucher
+  const voucherStats = {
+    total: vouchers.length,
+    active: vouchers.filter(v => v.isActive && new Date(v.endDate) >= new Date()).length,
+    used: vouchers.reduce((sum, v) => sum + v.usedCount, 0),
+  };
+
   // Refresh dữ liệu khi focus vào màn hình
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       fetchMovies();
       fetchTheaters();
+      fetchVouchers();
     });
     return unsubscribe;
   }, [navigation]);
 
-  // Lấy params từ navigation (khi từ AddTheater quay về)
+  // Lấy params từ navigation
   useEffect(() => {
     const params = navigation.getState()?.routes?.find(route => route.name === 'AdminHome')?.params;
     if (params && (params as any).refreshTheaters) {
       fetchTheaters();
       setActiveTab('theaters');
+    }
+    if (params && (params as any).refreshVouchers) {
+      fetchVouchers();
+      setActiveTab('vouchers');
     }
   }, [navigation]);
 
@@ -366,7 +441,7 @@ const AdminHomeScreen: React.FC<Props> = ({ navigation }) => {
         </View>
       </View>
 
-      {/* Tab Selector - PHIM và RẠP */}
+      {/* Tab Selector - PHIM, RẠP và VOUCHER */}
       <View style={styles.tabContainer}>
         <TouchableOpacity 
           style={[styles.tab, activeTab === 'movies' && styles.tabActive]}
@@ -381,6 +456,13 @@ const AdminHomeScreen: React.FC<Props> = ({ navigation }) => {
         >
           <Ionicons name="business-outline" size={20} color={activeTab === 'theaters' ? '#FFCC00' : '#8A7851'} />
           <Text style={[styles.tabText, activeTab === 'theaters' && styles.tabTextActive]}>Rạp</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.tab, activeTab === 'vouchers' && styles.tabActive]}
+          onPress={() => setActiveTab('vouchers')}
+        >
+          <Ionicons name="pricetag-outline" size={20} color={activeTab === 'vouchers' ? '#FFCC00' : '#8A7851'} />
+          <Text style={[styles.tabText, activeTab === 'vouchers' && styles.tabTextActive]}>Voucher</Text>
         </TouchableOpacity>
       </View>
 
@@ -422,7 +504,7 @@ const AdminHomeScreen: React.FC<Props> = ({ navigation }) => {
               ))
             )}
           </>
-        ) : (
+        ) : activeTab === 'theaters' ? (
           <>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>🏢 Danh sách rạp đang hoạt động</Text>
@@ -430,15 +512,75 @@ const AdminHomeScreen: React.FC<Props> = ({ navigation }) => {
                 <Ionicons name="add-circle-outline" size={24} color="#FFCC00" />
               </TouchableOpacity>
             </View>
-            {theaters.map((theater, index) => (
-              <TheaterCard 
-                key={theater.id} 
-                theater={theater} 
-                index={index}
-                navigation={navigation}
-                onDelete={handleDeleteTheater}
-              />
-            ))}
+            {theaters.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Ionicons name="business-outline" size={50} color="#BDBDBD" />
+                <Text style={styles.emptyText}>Không có rạp nào</Text>
+              </View>
+            ) : (
+              theaters.map((theater, index) => (
+                <TheaterCard 
+                  key={theater.id} 
+                  theater={theater} 
+                  index={index}
+                  navigation={navigation}
+                  onDelete={handleDeleteTheater}
+                />
+              ))
+            )}
+          </>
+        ) : (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>🏷️ Quản lý Voucher</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('AdminVouchers' as never)}>
+                <Ionicons name="add-circle-outline" size={24} color="#FFCC00" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Voucher Summary */}
+            <View style={styles.voucherSummary}>
+              <View style={styles.summaryItem}>
+                <Text style={styles.summaryValue}>{voucherStats.total}</Text>
+                <Text style={styles.summaryLabel}>Tổng số</Text>
+              </View>
+              <View style={styles.summaryDivider} />
+              <View style={styles.summaryItem}>
+                <Text style={styles.summaryValue}>{voucherStats.active}</Text>
+                <Text style={styles.summaryLabel}>Đang hoạt động</Text>
+              </View>
+              <View style={styles.summaryDivider} />
+              <View style={styles.summaryItem}>
+                <Text style={styles.summaryValue}>{voucherStats.used}</Text>
+                <Text style={styles.summaryLabel}>Đã sử dụng</Text>
+              </View>
+            </View>
+
+            {vouchers.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Ionicons name="pricetag-outline" size={50} color="#BDBDBD" />
+                <Text style={styles.emptyText}>Chưa có voucher nào</Text>
+              </View>
+            ) : (
+              <>
+                {vouchers.slice(0, 5).map((voucher) => (
+                  <VoucherCard 
+                    key={voucher.id} 
+                    voucher={voucher}
+                    onPress={() => navigation.navigate('AdminVouchers' as never)}
+                  />
+                ))}
+                {vouchers.length > 5 && (
+                  <TouchableOpacity 
+                    style={styles.viewAllButton}
+                    onPress={() => navigation.navigate('AdminVouchers' as never)}
+                  >
+                    <Text style={styles.viewAllText}>Xem tất cả {vouchers.length} voucher</Text>
+                    <Ionicons name="arrow-forward" size={18} color="#FFCC00" />
+                  </TouchableOpacity>
+                )}
+              </>
+            )}
           </>
         )}
         <View style={{ height: 20 }} />
@@ -760,6 +902,118 @@ const styles = StyleSheet.create({
   },
   theaterDeleteButton: {
     padding: 6,
+  },
+
+  // Voucher styles (thêm mới)
+  voucherSummary: {
+    flexDirection: 'row',
+    backgroundColor: '#1A1A2E',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  summaryItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  summaryValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFCC00',
+  },
+  summaryLabel: {
+    fontSize: 11,
+    color: '#FFF',
+    marginTop: 4,
+  },
+  summaryDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: '#FFFFFF22',
+  },
+  voucherCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  voucherCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  voucherCodeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  voucherCode: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#1A1A2E',
+  },
+  percentBadge: {
+    backgroundColor: '#FFCC00',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  percentBadgeText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#1A1A2E',
+  },
+  voucherStatus: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  voucherStatusText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  voucherDesc: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 8,
+  },
+  voucherCardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  voucherDiscount: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#FF6B6B',
+  },
+  voucherUsed: {
+    fontSize: 11,
+    color: '#8A7851',
+  },
+  viewAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#FFF',
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#FFCC00',
+  },
+  viewAllText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1A1A2E',
   },
 
   emptyContainer: {
