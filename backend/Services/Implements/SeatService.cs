@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Transactions;
 using backend.DTOs;
 using backend.Exceptions;
 using backend.Models;
@@ -82,11 +83,21 @@ namespace backend.Services.Implements
                     $"Lối đi ở cột {string.Join(", ", invalidAisles)} nằm ngoài phạm vi TotalColumns ({dto.TotalColumns}).",
                     "INVALID_AISLE_COLUMNS");
 
+            // Xóa ghế cũ và sinh ghế mới trong một Transaction để đảm bảo toàn vẹn dữ liệu
+            using var transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
+
             // Xóa ghế cũ (nếu có) trước khi tạo lại
             await _seatRepository.DeleteAllByRoomIdAsync(roomId);
 
-            // Tính danh sách ColumnIndex thực sự có ghế (loại bỏ cột lối đi)
-            var aisleSet = new HashSet<int>(dto.AisleAtColumns);
+            // Hàm map cột tương đối (do user nhập) sang cột vật lý (để lưu DB và vẽ UI)
+            // Nếu đánh số từ phải sang trái, cột 1 của user sẽ là cột TotalColumns ngoài cùng bên phải.
+            int MapToPhysicalColumn(int inputCol)
+            {
+                return dto.IsNumberingFromRight ? (dto.TotalColumns - inputCol + 1) : inputCol;
+            }
+
+            // Tính danh sách ColumnIndex thực sự có ghế (loại bỏ cột lối đi đã map vật lý)
+            var aisleSet = new HashSet<int>(dto.AisleAtColumns.Select(MapToPhysicalColumn));
             var seatColumns = Enumerable.Range(1, dto.TotalColumns)
                 .Where(col => !aisleSet.Contains(col))
                 .ToList();
@@ -101,20 +112,75 @@ namespace backend.Services.Implements
             foreach (var rowConfig in dto.Rows)
             {
                 int seatNumber = 1;
-                foreach (var colIndex in seatColumns)
+                // Danh sách cột bị ẩn của riêng hàng này (map sang vật lý)
+                var hiddenCols = rowConfig.HiddenColumns != null 
+                    ? new HashSet<int>(rowConfig.HiddenColumns.Select(MapToPhysicalColumn)) 
+                    : new HashSet<int>();
+
+                // Lọc ra các cột hợp lệ cho hàng này (không phải lối đi, không bị ẩn)
+                var validColumnsForThisRow = seatColumns
+                    .Where(col => !hiddenCols.Contains(col))
+                    .ToList();
+
+                // Đảo ngược danh sách cột nếu đánh số từ phải sang trái
+                if (dto.IsNumberingFromRight)
                 {
-                    seats.Add(new Seat
+                    validColumnsForThisRow.Reverse();
+                }
+
+                for (int i = 0; i < validColumnsForThisRow.Count; i++)
+                {
+                    int colIndex = validColumnsForThisRow[i];
+                    
+                    if (rowConfig.Type == "Couple")
                     {
-                        RoomId = roomId,
-                        RowName = rowConfig.RowName,
-                        SeatNumber = seatNumber++,   // 1, 2, 3... liên tục, bỏ qua lối đi
-                        ColumnIndex = colIndex,       // vị trí vật lý thực trong grid
-                        Type = rowConfig.Type
-                    });
+                        // Ghế đôi (Couple) gộp 2 slot liên tiếp
+                        if (i + 1 < validColumnsForThisRow.Count)
+                        {
+                            int nextColIndex = validColumnsForThisRow[i + 1];
+                            int leftMostColIndex = Math.Min(colIndex, nextColIndex);
+                            
+                            seats.Add(new Seat
+                            {
+                                RoomId = roomId,
+                                RowName = rowConfig.RowName,
+                                SeatNumber = seatNumber++,
+                                ColumnIndex = leftMostColIndex,
+                                Type = rowConfig.Type
+                            });
+                            i++; // Bỏ qua slot tiếp theo vì đã gộp vào ghế đôi
+                        }
+                        else 
+                        {
+                            // Nếu chỉ còn 1 slot lẻ ở cuối hàng, vẫn tạo nhưng nó sẽ chiếm 1 ô (hoặc lọt ra ngoài lưới)
+                            seats.Add(new Seat
+                            {
+                                RoomId = roomId,
+                                RowName = rowConfig.RowName,
+                                SeatNumber = seatNumber++,
+                                ColumnIndex = colIndex,
+                                Type = rowConfig.Type
+                            });
+                        }
+                    }
+                    else
+                    {
+                        seats.Add(new Seat
+                        {
+                            RoomId = roomId,
+                            RowName = rowConfig.RowName,
+                            SeatNumber = seatNumber++,
+                            ColumnIndex = colIndex,
+                            Type = rowConfig.Type
+                        });
+                    }
                 }
             }
 
             await _seatRepository.AddRangeAsync(seats);
+
+            // Xác nhận transaction thành công
+            transaction.Complete();
 
             // Trả về layout mới sau khi generate
             return new RoomSeatLayoutDto

@@ -14,7 +14,15 @@ import { Ionicons } from "@expo/vector-icons";
 export default function TheaterScreen({ navigation }: any) {
     const [expandedArea, setExpandedArea] = useState<string | null>(null);
     const [showMenu, setShowMenu] = useState(false);
+    const [cinemas, setCinemas] = useState<any[]>([]);
 
+    React.useEffect(() => {
+        import('../../services/theaterService').then(module => {
+            module.default.getAllTheaters().then(data => setCinemas(data)).catch(console.log);
+        });
+    }, []);
+
+    /* MOCK DATA
     const suggestCinemas = [
         "The Sun Hồ Gươm",
         "The Sun Hà Đông",
@@ -23,7 +31,9 @@ export default function TheaterScreen({ navigation }: any) {
         "The Sun Nam Từ Liêm",
         "The Sun Long Biên",
     ];
+    */
 
+    /* MOCK DATA
     const areas = [
         {
             name: "Hà Nội",
@@ -84,6 +94,7 @@ export default function TheaterScreen({ navigation }: any) {
             ],
         },
     ];
+    */
 
     const handleBack = () => {
         if (navigation.canGoBack()) {
@@ -93,8 +104,8 @@ export default function TheaterScreen({ navigation }: any) {
         }
     };
 
-    const goToShowtime = (cinemaName: string) => {
-        navigation.navigate("TheaterShowtime", { cinemaName });
+    const goToShowtime = (cinema: any) => {
+        navigation.navigate("TheaterShowtime", { cinemaName: cinema.name, cinemaId: cinema.id });
     };
 
     return (
@@ -122,18 +133,19 @@ export default function TheaterScreen({ navigation }: any) {
                 </View>
 
                 <View style={styles.listBox}>
-                    {suggestCinemas.map((cinema, index) => (
+                    {cinemas.slice(0, 5).map((cinema, index) => (
                         <TouchableOpacity
                             key={index}
                             style={styles.itemRow}
                             onPress={() => goToShowtime(cinema)}
                         >
                             <Text style={styles.cgv}>☀</Text>
-                            <Text style={styles.itemText}>{cinema}</Text>
+                            <Text style={styles.itemText}>{cinema.name}</Text>
                         </TouchableOpacity>
                     ))}
                 </View>
 
+                {/* MOCK DATA
                 <View style={styles.sectionHeader}>
                     <Text style={styles.sectionTitle}>CHỌN KHU VỰC</Text>
                 </View>
@@ -184,6 +196,24 @@ export default function TheaterScreen({ navigation }: any) {
                             </View>
                         );
                     })}
+                </View>
+                */}
+                
+                <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>TẤT CẢ RẠP</Text>
+                </View>
+
+                <View style={styles.listBox}>
+                    {cinemas.map((cinema, index) => (
+                        <TouchableOpacity
+                            key={index}
+                            style={styles.itemRow}
+                            onPress={() => goToShowtime(cinema)}
+                        >
+                            <Text style={styles.cgv}>☀</Text>
+                            <Text style={styles.itemText}>{cinema.name}</Text>
+                        </TouchableOpacity>
+                    ))}
                 </View>
 
                 <View style={{ height: 40 }} />

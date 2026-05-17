@@ -44,6 +44,7 @@ namespace backend.DTOs
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }
         public decimal BasePrice { get; set; }
+        public int RoomId { get; set; }
         public string RoomName { get; set; } = string.Empty;
         public int AvailableSeats { get; set; }
     }

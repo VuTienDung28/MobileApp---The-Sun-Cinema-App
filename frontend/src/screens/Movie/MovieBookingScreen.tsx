@@ -27,6 +27,7 @@ type Cinema = {
     showtimes: ShowtimeGroup[];
 };
 
+/* MOCK DATA
 const dates = [
     { day: "Hôm nay", date: "12", full: "Thứ 3, 12 Tháng 5, 2026" },
     { day: "T4", date: "13", full: "Thứ 4, 13 Tháng 5, 2026" },
@@ -48,57 +49,9 @@ const cinemas: Cinema[] = [
             },
         ],
     },
-    {
-        id: 2,
-        name: "The Sun Hà Đông",
-        showtimes: [
-            {
-                format: "2D Phụ Đề Việt",
-                times: ["10:30", "14:00", "19:20"],
-            },
-        ],
-    },
-    {
-        id: 3,
-        name: "The Sun Hai Bà Trưng",
-        showtimes: [
-            {
-                format: "2D Phụ Đề Việt",
-                times: ["09:45", "15:10", "20:35"],
-            },
-        ],
-    },
-    {
-        id: 4,
-        name: "The Sun Cầu Giấy",
-        showtimes: [
-            {
-                format: "2D Phụ Đề Việt",
-                times: ["11:00", "16:40", "21:40"],
-            },
-        ],
-    },
-    {
-        id: 5,
-        name: "The Sun Nam Từ Liêm",
-        showtimes: [
-            {
-                format: "2D Phụ Đề Việt",
-                times: ["12:10", "17:30", "22:00"],
-            },
-        ],
-    },
-    {
-        id: 6,
-        name: "The Sun Long Biên",
-        showtimes: [
-            {
-                format: "2D Phụ Đề Việt",
-                times: ["10:15", "15:55", "20:50"],
-            },
-        ],
-    },
+    ...
 ];
+*/
 
 const MovieBookingScreen: React.FC<Props> = ({ navigation, route }) => {
     const movieTitle =
@@ -107,24 +60,68 @@ const MovieBookingScreen: React.FC<Props> = ({ navigation, route }) => {
         "YÊU NỮ THÍCH HÀNG HIỆU 2";
 
     const [selectedDateIndex, setSelectedDateIndex] = useState(0);
-    const [openedCinemaId, setOpenedCinemaId] = useState<number | null>(1);
+    const [openedCinemaId, setOpenedCinemaId] = useState<number | null>(null);
     const [showMenu, setShowMenu] = useState(false);
 
-    const selectedDate = dates[selectedDateIndex];
+    const [realDates, setRealDates] = useState<any[]>([]);
+    const [realCinemas, setRealCinemas] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+
+    React.useEffect(() => {
+        const today = new Date();
+        const dArr = [];
+        const days = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+        for(let i = 0; i < 7; i++) {
+            const d = new Date(today);
+            d.setDate(today.getDate() + i);
+            dArr.push({
+                day: i === 0 ? "Hôm nay" : days[d.getDay()],
+                date: d.getDate(),
+                full: `${days[d.getDay()]}, ${d.getDate()} Tháng ${d.getMonth() + 1}, ${d.getFullYear()}`,
+                value: d.toISOString().split('T')[0]
+            });
+        }
+        setRealDates(dArr);
+    }, []);
+
+    React.useEffect(() => {
+        const movieId = route.params?.movieId;
+        if (!movieId || realDates.length === 0) return;
+        
+        setIsLoading(true);
+        import('../../services/showtimeService').then(module => {
+            module.default.getShowtimesByMovie(movieId, realDates[selectedDateIndex].value).then(data => {
+                setRealCinemas(data);
+                if (data.length > 0) setOpenedCinemaId(data[0].cinemaId);
+                setIsLoading(false);
+            }).catch(e => {
+                console.log(e);
+                setIsLoading(false);
+            });
+        });
+    }, [route.params?.movieId, selectedDateIndex, realDates]);
 
     const handlePressShowtime = (
         cinemaName: string,
+        cinemaId: number,
         time: string,
-        format: string
+        format: string,
+        showtimeId: number,
+        roomId: number,
+        roomName: string
     ) => {
         navigation.navigate("SeatSelection", {
             cinemaName,
+            cinemaId,
             movieId: route.params?.movieId,
             movieName: movieTitle,
             age: route.params?.age || "P",
             type: format,
             time,
-            date: selectedDate.full,
+            date: realDates[selectedDateIndex].full,
+            showtimeId,
+            roomId,
+            roomName
         });
     };
 
@@ -184,7 +181,7 @@ const MovieBookingScreen: React.FC<Props> = ({ navigation, route }) => {
                         showsHorizontalScrollIndicator={false}
                         contentContainerStyle={styles.dateList}
                     >
-                        {dates.map((item, index) => {
+                        {realDates.map((item, index) => {
                             const isActive = selectedDateIndex === index;
 
                             return (
@@ -222,19 +219,25 @@ const MovieBookingScreen: React.FC<Props> = ({ navigation, route }) => {
                         })}
                     </ScrollView>
 
-                    <Text style={styles.fullDateText}>{selectedDate.full}</Text>
+                    {realDates.length > 0 && (
+                        <Text style={styles.fullDateText}>{realDates[selectedDateIndex].full}</Text>
+                    )}
                 </View>
 
                 <View style={styles.cinemaList}>
-                    {cinemas.map((cinema) => {
-                        const isOpen = openedCinemaId === cinema.id;
+                    {isLoading && (
+                        <Text style={{ textAlign: 'center', marginTop: 20 }}>Đang tải...</Text>
+                    )}
+                    
+                    {!isLoading && realCinemas.map((cinema) => {
+                        const isOpen = openedCinemaId === cinema.cinemaId;
 
                         return (
-                            <View key={cinema.id} style={styles.cinemaItem}>
+                            <View key={cinema.cinemaId} style={styles.cinemaItem}>
                                 <TouchableOpacity
                                     style={styles.theaterRow}
                                     onPress={() =>
-                                        setOpenedCinemaId(isOpen ? null : cinema.id)
+                                        setOpenedCinemaId(isOpen ? null : cinema.cinemaId)
                                     }
                                 >
                                     <Ionicons
@@ -244,7 +247,7 @@ const MovieBookingScreen: React.FC<Props> = ({ navigation, route }) => {
                                     />
 
                                     <Text style={styles.theaterName}>
-                                        {cinema.name}
+                                        {cinema.cinemaName}
                                     </Text>
 
                                     <Ionicons
@@ -260,52 +263,43 @@ const MovieBookingScreen: React.FC<Props> = ({ navigation, route }) => {
 
                                 {isOpen && (
                                     <View style={styles.showtimeContent}>
-                                        {cinema.showtimes.map((group, index) => (
-                                            <View
-                                                key={index}
-                                                style={styles.showtimeGroup}
-                                            >
-                                                <View style={styles.formatLine}>
-                                                    <View
-                                                        style={styles.orangeCircle}
-                                                    />
+                                        <View style={styles.showtimeGroup}>
+                                            <View style={styles.formatLine}>
+                                                <View style={styles.orangeCircle} />
+                                                <Text style={styles.showtimeFormat}>
+                                                    2D Phụ Đề Việt
+                                                </Text>
+                                            </View>
 
-                                                    <Text
-                                                        style={
-                                                            styles.showtimeFormat
-                                                        }
-                                                    >
-                                                        {group.format}
-                                                    </Text>
-                                                </View>
-
-                                                <View style={styles.timeList}>
-                                                    {group.times.map((time) => (
+                                            <View style={styles.timeList}>
+                                                {cinema.showtimes.map((st: any) => {
+                                                    const d = new Date(st.startTime);
+                                                    const timeStr = d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+                                                    
+                                                    return (
                                                         <TouchableOpacity
-                                                            key={time}
-                                                            style={
-                                                                styles.timeButton
-                                                            }
+                                                            key={st.id}
+                                                            style={styles.timeButton}
                                                             onPress={() =>
                                                                 handlePressShowtime(
-                                                                    cinema.name,
-                                                                    time,
-                                                                    group.format
+                                                                    cinema.cinemaName,
+                                                                    cinema.cinemaId,
+                                                                    timeStr,
+                                                                    "2D Phụ Đề Việt",
+                                                                    st.id,
+                                                                    st.roomId,
+                                                                    st.roomName
                                                                 )
                                                             }
                                                         >
-                                                            <Text
-                                                                style={
-                                                                    styles.timeText
-                                                                }
-                                                            >
-                                                                {time}
+                                                            <Text style={styles.timeText}>
+                                                                {timeStr}
                                                             </Text>
                                                         </TouchableOpacity>
-                                                    ))}
-                                                </View>
+                                                    );
+                                                })}
                                             </View>
-                                        ))}
+                                        </View>
                                     </View>
                                 )}
                             </View>
