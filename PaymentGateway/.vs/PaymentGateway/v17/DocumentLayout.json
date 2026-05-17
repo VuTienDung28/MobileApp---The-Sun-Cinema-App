@@ -1,0 +1,92 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\MobileApp-Project\\CinemaApp\\PaymentGateway\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{1C5F3174-8E93-4520-A16A-E0F933C9B416}|PaymentGateway.csproj|d:\\mobileapp-project\\cinemaapp\\paymentgateway\\controllers\\mockgatewaycontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{1C5F3174-8E93-4520-A16A-E0F933C9B416}|PaymentGateway.csproj|solutionrelative:controllers\\mockgatewaycontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{1C5F3174-8E93-4520-A16A-E0F933C9B416}|PaymentGateway.csproj|d:\\mobileapp-project\\cinemaapp\\paymentgateway\\services\\paymentprocessor.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{1C5F3174-8E93-4520-A16A-E0F933C9B416}|PaymentGateway.csproj|solutionrelative:services\\paymentprocessor.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{1C5F3174-8E93-4520-A16A-E0F933C9B416}|PaymentGateway.csproj|d:\\mobileapp-project\\cinemaapp\\paymentgateway\\utils\\paymentsecurity.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{1C5F3174-8E93-4520-A16A-E0F933C9B416}|PaymentGateway.csproj|solutionrelative:utils\\paymentsecurity.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{1C5F3174-8E93-4520-A16A-E0F933C9B416}|PaymentGateway.csproj|d:\\mobileapp-project\\cinemaapp\\paymentgateway\\models\\paymentmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{1C5F3174-8E93-4520-A16A-E0F933C9B416}|PaymentGateway.csproj|solutionrelative:models\\paymentmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{3ae79031-e1bc-11d0-8f78-00a0c9110057}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "MockGatewayController.cs",
+              "DocumentMoniker": "D:\\MobileApp-Project\\CinemaApp\\PaymentGateway\\Controllers\\MockGatewayController.cs",
+              "RelativeDocumentMoniker": "Controllers\\MockGatewayController.cs",
+              "ToolTip": "D:\\MobileApp-Project\\CinemaApp\\PaymentGateway\\Controllers\\MockGatewayController.cs",
+              "RelativeToolTip": "Controllers\\MockGatewayController.cs",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAAAEEAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-17T05:43:34.816Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "PaymentProcessor.cs",
+              "DocumentMoniker": "D:\\MobileApp-Project\\CinemaApp\\PaymentGateway\\Services\\PaymentProcessor.cs",
+              "RelativeDocumentMoniker": "Services\\PaymentProcessor.cs",
+              "ToolTip": "D:\\MobileApp-Project\\CinemaApp\\PaymentGateway\\Services\\PaymentProcessor.cs",
+              "RelativeToolTip": "Services\\PaymentProcessor.cs",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAAAAMAAAAhAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-17T05:42:21.537Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "PaymentSecurity.cs",
+              "DocumentMoniker": "D:\\MobileApp-Project\\CinemaApp\\PaymentGateway\\Utils\\PaymentSecurity.cs",
+              "RelativeDocumentMoniker": "Utils\\PaymentSecurity.cs",
+              "ToolTip": "D:\\MobileApp-Project\\CinemaApp\\PaymentGateway\\Utils\\PaymentSecurity.cs",
+              "RelativeToolTip": "Utils\\PaymentSecurity.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAMAAAAhAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-17T05:41:45.052Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "PaymentModel.cs",
+              "DocumentMoniker": "D:\\MobileApp-Project\\CinemaApp\\PaymentGateway\\Models\\PaymentModel.cs",
+              "RelativeDocumentMoniker": "Models\\PaymentModel.cs",
+              "ToolTip": "D:\\MobileApp-Project\\CinemaApp\\PaymentGateway\\Models\\PaymentModel.cs",
+              "RelativeToolTip": "Models\\PaymentModel.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-17T05:41:11.601Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

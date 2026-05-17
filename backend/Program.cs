@@ -12,12 +12,14 @@ using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
 
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddHttpClient();
 
 // ===== Database Configuration =====
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -104,6 +106,8 @@ builder.Services.AddScoped<ISeatRepository, SeatRepository>();
 builder.Services.AddScoped<ISeatService, SeatService>();
 builder.Services.AddScoped<IShowtimeRepository, ShowtimeRepository>();
 builder.Services.AddScoped<IShowtimeService, ShowtimeService>();
+
+builder.Services.AddScoped<PaymentService>();
 
 // ===== Storage Configuration =====
 builder.Services.AddScoped<IStorageService, MinIOStorageService>();

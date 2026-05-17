@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import paymentService from "../../services/paymentService";
 
 const foodsData = [
     {
@@ -56,6 +57,7 @@ export default function TotalTicketsScreenUser({ navigation, route }: any) {
 
     const [checked, setChecked] = useState(true);
     const [showExitModal, setShowExitModal] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     const selectedFoodList = useMemo(() => {
         return foodsData
@@ -136,7 +138,7 @@ export default function TotalTicketsScreenUser({ navigation, route }: any) {
         return "Phim dành cho mọi độ tuổi";
     };
 
-    const saveTicketAndGoHome = async () => {
+    const handleCheckout = async () => {
         if (!checked) {
             Alert.alert(
                 "Thông báo",
@@ -146,43 +148,30 @@ export default function TotalTicketsScreenUser({ navigation, route }: any) {
         }
 
         try {
-            const newTicket = {
-                id: Date.now(),
-                movieName,
-                cinemaName,
-                age,
-                type,
-                time,
-                date,
-                seats: selectedSeats,
-                seatTotal: realSeatTotal,
-                foodTotal: realFoodTotal,
-                finalTotal: realFinalTotal,
-                foods: selectedFoodList,
-                paymentMethod: "ATM card",
-                status: "Đã thanh toán",
-                createdAt: new Date().toISOString(),
-            };
+            setLoading(true);
+            const response = await paymentService.checkout({
+                productId: 1, 
+                quantity: 1 
+            });
 
-            const oldTicketsJson = await AsyncStorage.getItem("MY_TICKETS");
-            const oldTickets = oldTicketsJson ? JSON.parse(oldTicketsJson) : [];
-
-            const updatedTickets = [newTicket, ...oldTickets];
-
-            await AsyncStorage.setItem(
-                "MY_TICKETS",
-                JSON.stringify(updatedTickets)
-            );
-
-            Alert.alert("Thành công", "Thanh toán thành công và vé đã được lưu.", [
-                {
-                    text: "OK",
-                    onPress: () => navigation.navigate("UserHome"),
-                },
-            ]);
+            if (response.data && response.data.qrUrl) {
+                navigation.navigate("PaymentScreen", {
+                    orderId: response.data.orderId,
+                    amount: response.data.amount,
+                    qrUrl: response.data.qrUrl,
+                    ticketData: {
+                        cinemaName, movieName, age, type, time, date, selectedSeats,
+                        seatTotal: realSeatTotal, foodTotal: realFoodTotal, finalTotal: realFinalTotal, foods: selectedFoodList
+                    }
+                });
+            } else {
+                Alert.alert("Lỗi", "Không thể lấy thông tin thanh toán từ Gateway.");
+            }
         } catch (error) {
-            console.log("Lỗi lưu vé:", error);
-            Alert.alert("Lỗi", "Không thể lưu vé. Vui lòng thử lại.");
+            console.error("Checkout error:", error);
+            Alert.alert("Lỗi", "Đã có lỗi xảy ra khi kết nối thanh toán.");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -259,7 +248,7 @@ export default function TotalTicketsScreenUser({ navigation, route }: any) {
                 </View>
 
                 <View style={styles.infoRow}>
-                    <Text style={styles.rowLabel}>Tổng</Text>
+                    <Text style={styles.rowLabel}>Đơn giá</Text>
                     <Text style={styles.rowValue}>
                         {realSeatTotal.toLocaleString("vi-VN")} đ
                     </Text>
@@ -292,7 +281,7 @@ export default function TotalTicketsScreenUser({ navigation, route }: any) {
                         ))}
 
                         <View style={styles.infoRow}>
-                            <Text style={styles.rowLabel}>Tổng</Text>
+                            <Text style={styles.rowLabel}>Đơn giá</Text>
                             <Text style={styles.rowValue}>
                                 {realFoodTotal.toLocaleString("vi-VN")} đ
                             </Text>
@@ -301,7 +290,7 @@ export default function TotalTicketsScreenUser({ navigation, route }: any) {
                 )}
 
                 <View style={styles.remainBox}>
-                    <Text style={styles.remainLabel}>Còn lại</Text>
+                    <Text style={styles.remainLabel}>Tổng</Text>
                     <Text style={styles.remainValue}>
                         {realFinalTotal.toLocaleString("vi-VN")} đ
                     </Text>
@@ -349,12 +338,13 @@ export default function TotalTicketsScreenUser({ navigation, route }: any) {
                 <TouchableOpacity
                     style={[
                         styles.continueButton,
-                        !checked && styles.disabledButton,
+                        (!checked || loading) && styles.disabledButton,
                     ]}
-                    onPress={saveTicketAndGoHome}
+                    onPress={handleCheckout}
+                    disabled={loading}
                 >
                     <Text style={styles.continueButtonText}>
-                        Tôi đồng ý và Tiếp tục
+                        {loading ? "Đang xử lý..." : "Tôi đồng ý và Thanh toán"}
                     </Text>
                 </TouchableOpacity>
             </ScrollView>
