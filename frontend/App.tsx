@@ -27,6 +27,7 @@ import FAQScreen from "./src/screens/Menu/FAQScreen";
 import MovieBookingScreen from "./src/screens/Movie/MovieBookingScreen";
 import FoodDrinkScreen from './src/screens/Tickets/FoodDrinkScreen';
 import TotalTicketsScreenUser from './src/screens/Tickets/TotalTicketsScreenUser';
+import PaymentScreen from './src/screens/Tickets/PaymentScreen';
 // Các màn hình quản lý dành cho Admin
 import AddMovieScreen from './src/screens/AdminManageScreens/AddMovieScreen';
 import EditMovieScreen from './src/screens/AdminManageScreens/EditMovieScreen';
@@ -141,6 +142,11 @@ export default function App() {
                     <Stack.Screen
                         name="TotalTicketsUser"
                         component={TotalTicketsScreenUser}
+                        options={{ headerShown: false }}
+                    />
+                    <Stack.Screen
+                        name="PaymentScreen"
+                        component={PaymentScreen}
                         options={{ headerShown: false }}
                     />
                 </>

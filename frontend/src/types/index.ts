@@ -129,6 +129,13 @@ export type RootStackParamList = {
   }
   | undefined;
 
+  PaymentScreen: {
+    orderId: string;
+    qrUrl: string;
+    amount: number;
+    ticketData: any; // Chứa toàn bộ dữ liệu vé để lưu lại sau khi thanh toán thành công
+  };
+
   SeatLayoutManage: {
     cinemaId: number;
     roomId: number;
