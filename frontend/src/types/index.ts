@@ -64,8 +64,8 @@ export type RootStackParamList = {
   UserHome: undefined;
   AdminHome: undefined;
   AdminMenu: undefined;
-
   AddMovie: undefined;
+  AdminVouchers: undefined;
 
   EditMovie: {
     movie: any;

@@ -36,6 +36,14 @@ const AdminMenuScreen: React.FC<Props> = ({ navigation }) => {
       screen: 'AddTheater',
     },
     {
+      key: 'VoucherManagement', // Thêm mới
+      title: 'Voucher Management',
+      description: 'Thêm, sửa, xóa mã giảm giá',
+      icon: 'pricetag-outline' as const,
+      color: '#FFCC00',
+      screen: 'AdminVouchers',
+    },
+    {
       key: 'TotalTickets',
       title: 'View Total Tickets Sold',
       description: 'Thống kê vé đã bán',

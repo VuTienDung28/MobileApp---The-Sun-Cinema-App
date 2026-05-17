@@ -10,6 +10,7 @@ import LoginScreen from './src/screens/Auth/LoginScreen';
 import RegisterScreen from './src/screens/Auth/RegisterScreen';
 import AdminHomeScreen from './src/screens/Home/AdminHomeScreen';
 import UserHomeScreen from './src/screens/Home/UserHomeScreen';
+import AdminVouchersScreen from './src/screens/AdminManageScreens/AdminVouchersScreen';
 import TheaterShowtimeScreen from "./src/screens/Theater/TheaterShowtimeScreen";
 import ProfileScreen from './src/screens/Profile/ProfileScreen';
 import VerifyPasswordScreen from './src/screens/Profile/VerifyPasswordScreen';
@@ -81,6 +82,7 @@ export default function App() {
                     <Stack.Screen name="SeatLayoutManage" component={SeatLayoutManageScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="AddShowtime" component={AddShowtimeScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="TotalTickets" component={TotalTicketsScreen} />
+                    <Stack.Screen name="AdminVouchers" component={AdminVouchersScreen} />
                     <Stack.Screen name="Profile" component={ProfileScreen} />
                     <Stack.Screen name="AdminMenu" component={AdminMenuScreen} />
                     <Stack.Screen name="VerifyPassword" component={VerifyPasswordScreen} options={{ headerShown: false }} />
