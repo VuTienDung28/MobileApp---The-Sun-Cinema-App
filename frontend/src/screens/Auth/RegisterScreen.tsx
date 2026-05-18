@@ -155,6 +155,7 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
                 <CustomDropdown
                   iconName="people"
                   placeholder="Giới tính"
+                  value={formData.gender}
                   options={GENDER_OPTIONS}
                   onSelect={(val) => setFormData({ ...formData, gender: val })}
                 />

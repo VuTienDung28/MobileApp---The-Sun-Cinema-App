@@ -54,6 +54,4 @@ namespace backend.Repositories.Implements
             return await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
         }
     }
-
 }
-

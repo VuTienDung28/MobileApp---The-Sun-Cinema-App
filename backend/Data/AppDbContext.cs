@@ -99,6 +99,8 @@ namespace backend.Data
                 .IsUnique();
                 
             // Decimal configurations
+            builder.Entity<Voucher>().Property(x => x.DiscountValue).HasColumnType("decimal(10,2)");
+            builder.Entity<Voucher>().Property(x => x.MinOrderValue).HasColumnType("decimal(10,2)");
             builder.Entity<Voucher>().Property(x => x.MaxDiscount).HasColumnType("decimal(10,2)");
             builder.Entity<Combo>().Property(x => x.Price).HasColumnType("decimal(10,2)");
             builder.Entity<Showtime>().Property(x => x.BasePrice).HasColumnType("decimal(10,2)");
