@@ -12,6 +12,8 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import paymentService from "../../services/paymentService";
+import axiosClient from "../../api/axiosClient";
+import useAlertStore from "../../store/useAlertStore";
 
 const foodsData = [
     {
@@ -49,6 +51,10 @@ export default function TotalTicketsScreenUser({ navigation, route }: any) {
         time = "15:20",
         date = "Thứ 3, 12 Tháng 5, 2026",
         selectedSeats = [],
+        selectedSeatIds = [],
+        showtimeId,
+        cinemaId,
+        roomId,
         seatTotal = 0,
         foodTotal = 0,
         finalTotal = 0,
@@ -58,6 +64,7 @@ export default function TotalTicketsScreenUser({ navigation, route }: any) {
     const [checked, setChecked] = useState(true);
     const [showExitModal, setShowExitModal] = useState(false);
     const [loading, setLoading] = useState(false);
+    const showAlert = useAlertStore(state => state.showAlert);
 
     const selectedFoodList = useMemo(() => {
         return foodsData
@@ -140,36 +147,64 @@ export default function TotalTicketsScreenUser({ navigation, route }: any) {
 
     const handleCheckout = async () => {
         if (!checked) {
-            Alert.alert(
+            showAlert(
                 "Thông báo",
-                "Bạn cần đồng ý với điều khoản sử dụng trước khi thanh toán."
+                "Bạn cần đồng ý với điều khoản sử dụng trước khi thanh toán.",
+                { type: 'warning' }
             );
             return;
         }
 
+        if (!showtimeId || !selectedSeatIds || selectedSeatIds.length === 0) {
+             showAlert("Lỗi", "Thông tin suất chiếu hoặc ghế không hợp lệ.", { type: 'error' });
+             return;
+        }
+
         try {
             setLoading(true);
-            const response = await paymentService.checkout({
-                productId: 1, 
-                quantity: 1 
+            
+            // Gọi API giữ ghế thật thay vì mock checkout
+            const response: any = await axiosClient.post('/Booking/hold', {
+                showtimeId: showtimeId,
+                seatIds: selectedSeatIds
             });
 
-            if (response.data && response.data.qrUrl) {
+            if (response && response.qrUrl) {
                 navigation.navigate("PaymentScreen", {
-                    orderId: response.data.orderId,
-                    amount: response.data.amount,
-                    qrUrl: response.data.qrUrl,
+                    bookingId: response.bookingId,
+                    amount: response.totalPrice + realFoodTotal, // Tiền ghế + Tiền bắp nước
+                    qrUrl: response.qrUrl,
                     ticketData: {
                         cinemaName, movieName, age, type, time, date, selectedSeats,
-                        seatTotal: realSeatTotal, foodTotal: realFoodTotal, finalTotal: realFinalTotal, foods: selectedFoodList
+                        seatTotal: response.totalPrice, foodTotal: realFoodTotal, finalTotal: response.totalPrice + realFoodTotal, foods: selectedFoodList
                     }
                 });
             } else {
-                Alert.alert("Lỗi", "Không thể lấy thông tin thanh toán từ Gateway.");
+                showAlert("Lỗi", "Không thể lấy thông tin thanh toán từ Gateway.", { type: 'error' });
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Checkout error:", error);
-            Alert.alert("Lỗi", "Đã có lỗi xảy ra khi kết nối thanh toán.");
+            
+            if (error?.ConflictSeats || error?.conflictSeats || (error?.Message && String(error.Message).includes("Ghế đã bị bán"))) {
+                showAlert(
+                    "Rất tiếc",
+                    "Người khác đang giao dịch thanh toán với ghế này. Vui lòng chọn ghế khác.",
+                    {
+                        type: 'warning',
+                        buttons: [
+                            {
+                                text: "Đồng ý",
+                                style: 'confirm',
+                                onPress: () => navigation.navigate("SeatSelection", {
+                                    cinemaName, movieName, age, type, time, date, showtimeId, cinemaId, roomId
+                                })
+                            }
+                        ]
+                    }
+                );
+            } else {
+                showAlert("Lỗi", error?.Message || error?.message || "Đã có lỗi xảy ra khi kết nối thanh toán.", { type: 'error' });
+            }
         } finally {
             setLoading(false);
         }

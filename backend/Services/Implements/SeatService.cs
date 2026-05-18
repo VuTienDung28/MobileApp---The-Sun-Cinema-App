@@ -7,6 +7,7 @@ using backend.Exceptions;
 using backend.Models;
 using backend.Repositories.Interface;
 using backend.Services.Interface;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace backend.Services.Implements
 {
@@ -14,11 +15,13 @@ namespace backend.Services.Implements
     {
         private readonly ISeatRepository _seatRepository;
         private readonly IRoomRepository _roomRepository;
+        private readonly IMemoryCache _cache;
 
-        public SeatService(ISeatRepository seatRepository, IRoomRepository roomRepository)
+        public SeatService(ISeatRepository seatRepository, IRoomRepository roomRepository, IMemoryCache cache)
         {
             _seatRepository = seatRepository;
             _roomRepository = roomRepository;
+            _cache = cache;
         }
 
         // =============================================
@@ -26,6 +29,12 @@ namespace backend.Services.Implements
         // =============================================
         public async Task<RoomSeatLayoutDto> GetLayoutByRoomIdAsync(int roomId)
         {
+            string cacheKey = $"RoomLayout_{roomId}";
+            if (_cache.TryGetValue(cacheKey, out RoomSeatLayoutDto cachedLayout) && cachedLayout != null)
+            {
+                return cachedLayout;
+            }
+
             var room = await _roomRepository.GetByIdAsync(roomId)
                 ?? throw new UserFriendlyException("Không tìm thấy phòng chiếu.", "ROOM_NOT_FOUND");
 
@@ -36,13 +45,18 @@ namespace backend.Services.Implements
             // Nếu chưa có ghế → TotalColumns = 0
             int totalColumns = seatList.Any() ? seatList.Max(s => s.ColumnIndex) : 0;
 
-            return new RoomSeatLayoutDto
+            var layout = new RoomSeatLayoutDto
             {
                 RoomId = room.Id,
                 RoomName = room.Name,
                 TotalColumns = totalColumns,
                 Seats = seatList.Select(MapToSeatDto).ToList()
             };
+
+            // Cache layout for 12 hours (it rarely changes)
+            _cache.Set(cacheKey, layout, System.TimeSpan.FromHours(12));
+
+            return layout;
         }
 
         // =============================================
@@ -183,13 +197,18 @@ namespace backend.Services.Implements
             transaction.Complete();
 
             // Trả về layout mới sau khi generate
-            return new RoomSeatLayoutDto
+            var layout = new RoomSeatLayoutDto
             {
                 RoomId = room.Id,
                 RoomName = room.Name,
                 TotalColumns = dto.TotalColumns,
                 Seats = seats.Select(MapToSeatDto).ToList()
             };
+
+            // Cập nhật Cache
+            _cache.Set($"RoomLayout_{roomId}", layout, System.TimeSpan.FromHours(12));
+
+            return layout;
         }
 
         // =============================================
@@ -206,6 +225,9 @@ namespace backend.Services.Implements
                     "ROOM_HAS_BOOKED_TICKETS");
 
             await _seatRepository.DeleteAllByRoomIdAsync(roomId);
+
+            // Xóa Cache
+            _cache.Remove($"RoomLayout_{roomId}");
         }
 
         // =============================================
