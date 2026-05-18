@@ -77,6 +77,11 @@ const showtimeService = {
   getShowtimeById: async (id: number): Promise<ShowtimeDetailDto> => {
     const response = await axiosClient.get(`/showtime/detail/${id}`);
     return response.data;
+  },
+
+  getSeatStatus: async (id: number): Promise<number[]> => {
+    const response = await axiosClient.get(`/showtime/${id}/seats/status`);
+    return response.data;
   }
 };
 

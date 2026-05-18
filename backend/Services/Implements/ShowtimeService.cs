@@ -120,6 +120,17 @@ namespace backend.Services.Implements
         }
 
         // =============================================
+        // GET SEAT STATUS
+        // =============================================
+        public async Task<IEnumerable<int>> GetSeatStatusAsync(int showtimeId)
+        {
+            var showtime = await _showtimeRepository.GetByIdAsync(showtimeId)
+                ?? throw new UserFriendlyException("Không tìm thấy suất chiếu.", "SHOWTIME_NOT_FOUND");
+
+            return await _showtimeRepository.GetBookedAndPendingSeatIdsAsync(showtimeId);
+        }
+
+        // =============================================
         // CREATE
         // =============================================
         public async Task<ShowtimeDetailDto> CreateAsync(CreateShowtimeDto dto)

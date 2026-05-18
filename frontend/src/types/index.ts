@@ -41,7 +41,7 @@ export type AlertType = 'success' | 'error' | 'warning' | 'info';
 
 export interface AlertButton {
   text: string;
-  style?: 'cancel' | 'default';
+  style?: 'cancel' | 'default' | 'confirm';
   onPress?: () => void;
 }
 
@@ -130,7 +130,7 @@ export type RootStackParamList = {
   | undefined;
 
   PaymentScreen: {
-    orderId: string;
+    bookingId: string;
     qrUrl: string;
     amount: number;
     ticketData: any; // Chứa toàn bộ dữ liệu vé để lưu lại sau khi thanh toán thành công

@@ -2,12 +2,11 @@ import axiosClient from '../api/axiosClient';
 import { ApiResponse } from '../types';
 
 export interface CheckoutRequest {
-    productId: number;
-    quantity: number;
+    totalAmount: number;
 }
 
 export interface CheckoutResponseData {
-    orderId: string;
+    orderId: string; // The BE still returns "orderId" in JSON
     amount: number;
     qrUrl: string;
 }

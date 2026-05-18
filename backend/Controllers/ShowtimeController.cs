@@ -104,6 +104,32 @@ namespace backend.Controllers
         }
 
         // =============================================
+        // GET /api/showtime/{id}/seats/status
+        // Lấy danh sách SeatId đã bị đặt hoặc đang được giữ (Pending)
+        // =============================================
+        [HttpGet("{id:int}/seats/status")]
+        public async Task<IActionResult> GetSeatStatus(int id)
+        {
+            try
+            {
+                var result = await _showtimeService.GetSeatStatusAsync(id);
+                return Ok(ApiResponse<IEnumerable<int>>.Success(
+                    result,
+                    "Lấy trạng thái ghế thành công",
+                    "GET_SEAT_STATUS_SUCCESS"));
+            }
+            catch (UserFriendlyException ex)
+            {
+                return NotFound(ApiResponse<string>.Failure(ex.ErrorCode, ex.Message));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse<string>.Failure(
+                    "SERVER_ERROR", "Lỗi hệ thống khi lấy trạng thái ghế.", ex.Message));
+            }
+        }
+
+        // =============================================
         // POST /api/showtime
         // Tạo suất chiếu mới (Admin only)
         //

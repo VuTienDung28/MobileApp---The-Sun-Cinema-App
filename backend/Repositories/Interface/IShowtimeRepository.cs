@@ -39,5 +39,8 @@ namespace backend.Repositories.Interface
 
         /// <summary>Đếm số ghế đã được đặt (có vé) trong 1 suất chiếu</summary>
         Task<int> CountBookedSeatsAsync(int showtimeId);
+
+        /// <summary>Lấy danh sách ID các ghế đã được đặt hoặc đang giữ</summary>
+        Task<IEnumerable<int>> GetBookedAndPendingSeatIdsAsync(int showtimeId);
     }
 }
