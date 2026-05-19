@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "Gbyn4tXHH9w=",
+  "dgSpecHash": "ebVzQZd+EUk=",
   "success": true,
-  "projectFilePath": "D:\\MobileApp-Project\\CinemaApp\\PaymentGateway\\PaymentGateway.csproj",
+  "projectFilePath": "F:\\Hoc_kiem_chu\\Đồ án Phát triển ứng dụng đa nền tảng\\MobileApp---The-Sun-Cinema-App\\PaymentGateway\\PaymentGateway.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Admin\\.nuget\\packages\\microsoft.extensions.apidescription.server\\6.0.5\\microsoft.extensions.apidescription.server.6.0.5.nupkg.sha512",
     "C:\\Users\\Admin\\.nuget\\packages\\microsoft.openapi\\1.6.14\\microsoft.openapi.1.6.14.nupkg.sha512",

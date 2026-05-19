@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\MobileApp-Project\\CinemaApp\\PaymentGateway\\PaymentGateway.csproj": {}
+    "F:\\Hoc_kiem_chu\\Đồ án Phát triển ứng dụng đa nền tảng\\MobileApp---The-Sun-Cinema-App\\PaymentGateway\\PaymentGateway.csproj": {}
   },
   "projects": {
-    "D:\\MobileApp-Project\\CinemaApp\\PaymentGateway\\PaymentGateway.csproj": {
+    "F:\\Hoc_kiem_chu\\Đồ án Phát triển ứng dụng đa nền tảng\\MobileApp---The-Sun-Cinema-App\\PaymentGateway\\PaymentGateway.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\MobileApp-Project\\CinemaApp\\PaymentGateway\\PaymentGateway.csproj",
+        "projectUniqueName": "F:\\Hoc_kiem_chu\\Đồ án Phát triển ứng dụng đa nền tảng\\MobileApp---The-Sun-Cinema-App\\PaymentGateway\\PaymentGateway.csproj",
         "projectName": "PaymentGateway",
-        "projectPath": "D:\\MobileApp-Project\\CinemaApp\\PaymentGateway\\PaymentGateway.csproj",
+        "projectPath": "F:\\Hoc_kiem_chu\\Đồ án Phát triển ứng dụng đa nền tảng\\MobileApp---The-Sun-Cinema-App\\PaymentGateway\\PaymentGateway.csproj",
         "packagesPath": "C:\\Users\\Admin\\.nuget\\packages\\",
-        "outputPath": "D:\\MobileApp-Project\\CinemaApp\\PaymentGateway\\obj\\",
+        "outputPath": "F:\\Hoc_kiem_chu\\Đồ án Phát triển ứng dụng đa nền tảng\\MobileApp---The-Sun-Cinema-App\\PaymentGateway\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -30,6 +30,7 @@
         },
         "frameworks": {
           "net8.0": {
+            "framework": "net8.0",
             "targetAlias": "net8.0",
             "projectReferences": {}
           }
@@ -44,10 +45,11 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "10.0.100"
+        "SdkAnalysisLevel": "10.0.300"
       },
       "frameworks": {
         "net8.0": {
+          "framework": "net8.0",
           "targetAlias": "net8.0",
           "dependencies": {
             "Swashbuckle.AspNetCore": {
@@ -74,7 +76,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.102/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.300/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
