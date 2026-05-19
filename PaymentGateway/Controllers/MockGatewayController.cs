@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using PaymentGateway.Utils;
 using PaymentGateway.Models;
 
@@ -24,13 +24,13 @@ namespace PaymentGatewayService.Controllers
         public IActionResult CreateBill([FromBody] PaymentRequest request)
         {
             // Ki?m tra ch? ký t? BE g?i sang ?? ??m b?o ?úng là BE c?a mình g?i
-            string rawData = $"orderId={request.OrderId}&amount={request.Amount}";
+            string rawData = $"bookingId={request.BookingId}&amount={request.Amount}";
             bool isValid = PaymentSecurity.VerifySignature(rawData, request.Signature, _secretKey);
 
             if (!isValid) return BadRequest("Signature invalid from Business BE");
 
             // Gi? l?p t?o URL QR 
-            var qrUrl = $"https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=GATEWAY_BILL_{request.OrderId}";
+            var qrUrl = $"https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=GATEWAY_BILL_{request.BookingId}";
 
             return Ok(new
             {
@@ -43,16 +43,16 @@ namespace PaymentGatewayService.Controllers
         [HttpPost("user-pay")]
         public async Task<IActionResult> UserPay([FromBody] dynamic data)
         {
-            string orderId = data.GetProperty("orderId").GetString();
+            string bookingId = data.GetProperty("bookingId").ToString();
             long amount = data.GetProperty("amount").GetInt64();
 
             // Gateway t? tính HMAC ?? báo cho BE
-            string rawData = $"orderId={orderId}&amount={amount}";
+            string rawData = $"bookingId={bookingId}&amount={amount}";
             string signature = PaymentSecurity.GenerateHmacSha256(rawData, _secretKey);
 
             //  Callback ve Business BE
             var client = _httpClientFactory.CreateClient();
-            var callbackData = new { orderId, amount, signature };
+            var callbackData = new { bookingId, amount, signature };
 
             // Chú ý: URL này phải trùng với URL mà BE đã đăng ký để nhận callback 
             var response = await client.PostAsJsonAsync(_callbackUrl, callbackData);

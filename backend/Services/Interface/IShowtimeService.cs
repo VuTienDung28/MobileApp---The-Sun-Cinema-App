@@ -24,6 +24,9 @@ namespace backend.Services.Interface
         /// </summary>
         Task<IEnumerable<ShowtimesByMovieDto>> GetByCinemaAndDateAsync(int cinemaId, DateTime date);
 
+        /// <summary>Lấy danh sách các SeatId đã đặt hoặc đang giữ</summary>
+        Task<IEnumerable<int>> GetSeatStatusAsync(int showtimeId);
+
         // ===== ADMIN Only =====
 
         /// <summary>Tạo suất chiếu mới (kiểm tra conflict trước)</summary>

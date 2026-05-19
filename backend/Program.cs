@@ -21,6 +21,10 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpClient();
 
+// ===== Caching & SignalR =====
+builder.Services.AddMemoryCache();
+builder.Services.AddSignalR();
+
 // ===== Database Configuration =====
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -203,5 +207,6 @@ app.UseAuthentication(); // QUAN TRỌNG: Phải trước UseAuthorization
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<backend.Hubs.SeatHub>("/seathub");
 
 app.Run();

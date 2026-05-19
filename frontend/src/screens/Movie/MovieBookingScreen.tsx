@@ -310,12 +310,12 @@ const MovieBookingScreen: React.FC<Props> = ({ navigation, route }) => {
 
             <View style={styles.bottomBar}>
                 <TouchableOpacity style={styles.bottomItem}>
-                    <Text style={styles.bottomNumber}>22</Text>
+                    {/* <Text style={styles.bottomNumber}>22</Text> */}
                     <Text style={styles.bottomLabel}>Gợi Ý Cho Bạn</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.bottomItem}>
-                    <Text style={styles.bottomNumber}>64</Text>
+                    {/* <Text style={styles.bottomNumber}>64</Text> */}
                     <Text style={styles.bottomLabel}>Tất Cả Rạp</Text>
                 </TouchableOpacity>
             </View>

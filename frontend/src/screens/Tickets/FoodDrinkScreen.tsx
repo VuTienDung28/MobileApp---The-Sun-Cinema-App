@@ -46,7 +46,11 @@ export default function FoodDrinkScreen({ navigation, route }: any) {
         time = "20:00",
         date = "Thứ 3, 12 Tháng 5, 2026",
         selectedSeats = [],
+        selectedSeatIds = [],
         totalPrice = 0,
+        showtimeId,
+        cinemaId,
+        roomId
     } = route.params || {};
 
     const [quantities, setQuantities] = useState<Record<number, number>>({});
@@ -86,6 +90,10 @@ export default function FoodDrinkScreen({ navigation, route }: any) {
             time,
             date,
             selectedSeats,
+            selectedSeatIds,
+            showtimeId,
+            cinemaId,
+            roomId,
             seatTotal: totalPrice,
             foodTotal,
             finalTotal,
