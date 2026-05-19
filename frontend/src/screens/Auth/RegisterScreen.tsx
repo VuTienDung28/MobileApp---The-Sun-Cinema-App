@@ -156,8 +156,7 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
                   iconName="people"
                   placeholder="Giới tính"
                   options={GENDER_OPTIONS}
-                  onSelect={(val) => setFormData({ ...formData, gender: val })}
-                />
+                  onSelect={(val) => setFormData({ ...formData, gender: val })} value={''}                />
               </View>
               <View style={styles.halfInput}>
                 <CustomDropdown
