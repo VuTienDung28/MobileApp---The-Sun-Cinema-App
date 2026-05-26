@@ -12,6 +12,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../types";
 import AppSideMenu from "../../components/AppSideMenu";
+import * as Location from "expo-location";
+import { calculateDistance } from "../../utils/locationUtils";
+
+const formatDistance = (dist: number) => {
+    if (dist < 1) {
+        return `${Math.round(dist * 1000)}m`;
+    }
+    return `${dist.toFixed(1).replace('.', ',')}km`;
+};
 
 type Props = NativeStackScreenProps<RootStackParamList, "MovieBooking">;
 
@@ -67,6 +76,30 @@ const MovieBookingScreen: React.FC<Props> = ({ navigation, route }) => {
     const [realCinemas, setRealCinemas] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
+    const [userLocation, setUserLocation] = useState<{ latitude: number, longitude: number } | null>(null);
+    const [hasLocationPermission, setHasLocationPermission] = useState<boolean | null>(null);
+
+    React.useEffect(() => {
+        const getLocation = async () => {
+            try {
+                let { status } = await Location.requestForegroundPermissionsAsync();
+                if (status !== 'granted') {
+                    setHasLocationPermission(false);
+                    return;
+                }
+                setHasLocationPermission(true);
+                let location = await Location.getCurrentPositionAsync({});
+                setUserLocation({
+                    latitude: location.coords.latitude,
+                    longitude: location.coords.longitude
+                });
+            } catch (error) {
+                console.log("Location error", error);
+            }
+        };
+        getLocation();
+    }, []);
+
     React.useEffect(() => {
         const today = new Date();
         const dArr = [];
@@ -100,6 +133,20 @@ const MovieBookingScreen: React.FC<Props> = ({ navigation, route }) => {
             });
         });
     }, [route.params?.movieId, selectedDateIndex, realDates]);
+
+    const sortedCinemas = React.useMemo(() => {
+        if (!userLocation || realCinemas.length === 0) return realCinemas;
+
+        const cinemasWithDistance = realCinemas.map(c => {
+            if (c.latitude && c.longitude) {
+                const dist = calculateDistance(userLocation.latitude, userLocation.longitude, c.latitude, c.longitude);
+                return { ...c, distance: dist };
+            }
+            return { ...c, distance: Infinity };
+        });
+
+        return cinemasWithDistance.sort((a, b) => a.distance - b.distance);
+    }, [realCinemas, userLocation]);
 
     const handlePressShowtime = (
         cinemaName: string,
@@ -229,8 +276,15 @@ const MovieBookingScreen: React.FC<Props> = ({ navigation, route }) => {
                         <Text style={{ textAlign: 'center', marginTop: 20 }}>Đang tải...</Text>
                     )}
                     
-                    {!isLoading && realCinemas.map((cinema) => {
+                    {!isLoading && sortedCinemas.map((cinema) => {
                         const isOpen = openedCinemaId === cinema.cinemaId;
+                        let distanceStr = "";
+                        if (cinema.distance !== undefined && cinema.distance !== Infinity) {
+                            distanceStr = formatDistance(cinema.distance);
+                        } else if (userLocation && cinema.latitude && cinema.longitude) {
+                            const dist = calculateDistance(userLocation.latitude, userLocation.longitude, cinema.latitude, cinema.longitude);
+                            distanceStr = formatDistance(dist);
+                        }
 
                         return (
                             <View key={cinema.cinemaId} style={styles.cinemaItem}>
@@ -246,9 +300,21 @@ const MovieBookingScreen: React.FC<Props> = ({ navigation, route }) => {
                                         color="#FFD000"
                                     />
 
-                                    <Text style={styles.theaterName}>
-                                        {cinema.cinemaName}
-                                    </Text>
+                                    <View style={styles.theaterNameWrapper}>
+                                        <Text style={styles.theaterName} numberOfLines={1}>
+                                            {cinema.cinemaName.startsWith('The Sun ') ? (
+                                                <><Text style={styles.brandText}>The Sun </Text>{cinema.cinemaName.substring(8)}</>
+                                            ) : cinema.cinemaName.startsWith('CGV ') ? (
+                                                <><Text style={styles.brandText}>CGV </Text>{cinema.cinemaName.substring(4)}</>
+                                            ) : (
+                                                cinema.cinemaName
+                                            )}
+                                        </Text>
+                                    </View>
+
+                                    {distanceStr ? (
+                                        <Text style={styles.distanceText}>{distanceStr}</Text>
+                                    ) : null}
 
                                     <Ionicons
                                         name={
@@ -483,12 +549,29 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
 
-    theaterName: {
+    theaterNameWrapper: {
         flex: 1,
         marginLeft: 12,
-        fontSize: 23,
-        color: "#222222",
+        justifyContent: "center",
+    },
+
+    theaterName: {
+        fontSize: 22,
+        color: "#463A32",
+        fontWeight: "600",
+    },
+
+    brandText: {
+        fontSize: 22,
+        color: "#D69A00",
         fontWeight: "700",
+    },
+
+    distanceText: {
+        fontSize: 16,
+        color: "#D69A00",
+        fontWeight: "600",
+        marginRight: 8,
     },
 
     showtimeContent: {

@@ -49,7 +49,9 @@ namespace backend.Services.Implements
             var cinema = new Cinema
             {
                 Name = dto.Name,
-                Address = dto.Address
+                Address = dto.Address,
+                Latitude = dto.Latitude,
+                Longitude = dto.Longitude
             };
 
             var created = await _cinemaRepository.AddAsync(cinema);
@@ -75,6 +77,16 @@ namespace backend.Services.Implements
             if (dto.Address != null)
             {
                 cinema.Address = dto.Address;
+            }
+
+            if (dto.Latitude.HasValue)
+            {
+                cinema.Latitude = dto.Latitude.Value;
+            }
+
+            if (dto.Longitude.HasValue)
+            {
+                cinema.Longitude = dto.Longitude.Value;
             }
 
             await _cinemaRepository.UpdateAsync(cinema);
@@ -104,7 +116,9 @@ namespace backend.Services.Implements
         {
             Id = c.Id,
             Name = c.Name,
-            Address = c.Address
+            Address = c.Address,
+            Latitude = c.Latitude,
+            Longitude = c.Longitude
         };
 
         private static CinemaDetailDto MapToDetail(Cinema c) => new()
@@ -112,6 +126,8 @@ namespace backend.Services.Implements
             Id = c.Id,
             Name = c.Name,
             Address = c.Address,
+            Latitude = c.Latitude,
+            Longitude = c.Longitude,
             Rooms = c.Rooms.Select(r => new RoomInCinemaDto
             {
                 Id = r.Id,

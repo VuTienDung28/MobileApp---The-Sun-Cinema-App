@@ -72,6 +72,8 @@ namespace backend.Services.Implements
                     CinemaId = cinema.Id,
                     CinemaName = cinema.Name,
                     CinemaAddress = cinema.Address,
+                    Latitude = cinema.Latitude,
+                    Longitude = cinema.Longitude,
                     Showtimes = slots.OrderBy(s => s.StartTime).ToList()
                 });
             }

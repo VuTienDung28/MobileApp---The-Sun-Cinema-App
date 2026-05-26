@@ -59,8 +59,16 @@ export default function MyTicketsScreen() {
         }
     };
 
-    const upcomingBookings = bookings.filter(b => new Date(b.showtimeStart) > new Date());
-    const watchedBookings = bookings.filter(b => new Date(b.showtimeStart) <= new Date());
+    const isUpcoming = (b: Booking) => {
+        const startTime = new Date(b.showtimeStart).getTime();
+        // Giả sử phim kéo dài 120 phút nếu không có thông tin thời lượng
+        const durationMs = (b.movieDuration || 120) * 60000; 
+        const endTime = startTime + durationMs;
+        return endTime > new Date().getTime();
+    };
+
+    const upcomingBookings = bookings.filter(isUpcoming);
+    const watchedBookings = bookings.filter(b => !isUpcoming(b));
     const displayBookings = activeTab === "upcoming" ? upcomingBookings : watchedBookings;
 
     const formatDate = (dateString: string) => {

@@ -147,19 +147,92 @@ export default function SeatSelectionScreen({ navigation, route }: any) {
         return styles.normalSeat;
     };
 
-    const isAgeRestricted = () => {
-        const movieAge = String(age || "").toUpperCase();
+    // Trả về số tuổi giới hạn (13, 16, 18), hoặc null nếu không hạn chế
+    const getAgeLimit = (): number | null => {
+        const movieAge = String(age || "").trim().toUpperCase();
+        if (movieAge === "T18") return 18;
+        if (movieAge === "T16") return 16;
+        if (movieAge === "T13") return 13;
+        return null; // P, K, rỗng → không yêu cầu xác nhận tuổi nghiêm ngặt
+    };
 
+    // Nội dung xác nhận phù hợp với từng mức phân loại
+    const getConfirmMessage = () => {
+        const limit = getAgeLimit();
+
+        if (limit === 18) {
+            return (
+                <Text style={styles.confirmContent}>
+                    Tôi xác nhận mua vé cho người xem từ đủ{" "}
+                    <Text style={{ fontWeight: "900" }}>18 tuổi</Text>{" "}
+                    trở lên và đồng ý cung cấp giấy tờ tùy thân để xác thực độ tuổi
+                    người xem. The Sun Cinema sẽ không hoàn tiền nếu người xem
+                    không đáp ứng đủ điều kiện.{" "}
+                    <Text
+                        style={styles.linkText}
+                        onPress={() => Linking.openURL("https://bvhttdl.gov.vn/")}
+                    >
+                        Tham khảo quy định
+                    </Text>{" "}
+                    của Bộ Văn Hóa, Thể Thao và Du Lịch.
+                </Text>
+            );
+        }
+
+        if (limit === 16) {
+            return (
+                <Text style={styles.confirmContent}>
+                    Tôi xác nhận mua vé cho người xem từ đủ{" "}
+                    <Text style={{ fontWeight: "900" }}>16 tuổi</Text>{" "}
+                    trở lên và đồng ý cung cấp giấy tờ tùy thân nếu được yêu cầu.
+                    The Sun Cinema sẽ không hoàn tiền nếu người xem không đáp ứng
+                    đủ điều kiện.{" "}
+                    <Text
+                        style={styles.linkText}
+                        onPress={() => Linking.openURL("https://bvhttdl.gov.vn/")}
+                    >
+                        Tham khảo quy định
+                    </Text>{" "}
+                    của Bộ Văn Hóa, Thể Thao và Du Lịch.
+                </Text>
+            );
+        }
+
+        if (limit === 13) {
+            return (
+                <Text style={styles.confirmContent}>
+                    Tôi xác nhận mua vé cho người xem từ đủ{" "}
+                    <Text style={{ fontWeight: "900" }}>13 tuổi</Text>{" "}
+                    trở lên. The Sun Cinema sẽ không hoàn tiền nếu người xem
+                    không đáp ứng đủ điều kiện.{" "}
+                    <Text
+                        style={styles.linkText}
+                        onPress={() => Linking.openURL("https://bvhttdl.gov.vn/")}
+                    >
+                        Tham khảo quy định
+                    </Text>{" "}
+                    của Bộ Văn Hóa, Thể Thao và Du Lịch.
+                </Text>
+            );
+        }
+
+        // P hoặc không xác định → mọi độ tuổi
         return (
-            movieAge.includes("T13") ||
-            movieAge.includes("T16") ||
-            movieAge.includes("T18") ||
-            movieAge.includes("C13") ||
-            movieAge.includes("C16") ||
-            movieAge.includes("C18") ||
-            movieAge.includes("13") ||
-            movieAge.includes("16") ||
-            movieAge.includes("18")
+            <Text style={styles.confirmContent}>
+                Phim dành cho mọi độ tuổi. Tôi xác nhận The Sun Cinema không
+                được phép phục vụ khách hàng dưới 13 tuổi cho các suất chiếu
+                kết thúc từ 22:00 và dưới 16 tuổi cho các suất chiếu kết thúc
+                từ 23:00. Tôi đồng ý cung cấp giấy tờ tùy thân để xác thực
+                độ tuổi người xem. The Sun Cinema sẽ không hoàn tiền nếu người
+                xem không đáp ứng đủ điều kiện.{" "}
+                <Text
+                    style={styles.linkText}
+                    onPress={() => Linking.openURL("https://bvhttdl.gov.vn/")}
+                >
+                    Tham khảo quy định
+                </Text>{" "}
+                của Bộ Văn Hóa, Thể Thao và Du Lịch.
+            </Text>
         );
     };
 
@@ -410,37 +483,7 @@ export default function SeatSelectionScreen({ navigation, route }: any) {
                     <View style={styles.confirmBox}>
                         <Text style={styles.confirmTitle}>Xác nhận</Text>
 
-                        {isAgeRestricted() ? (
-                            <Text style={styles.confirmContent}>
-                                Tôi xác nhận mua vé cho người xem từ đủ 18 tuổi trở lên
-                                và đồng ý cung cấp giấy tờ tùy thân để xác thực độ tuổi
-                                người xem. The Sun Cinema sẽ không hoàn tiền nếu người xem
-                                không đáp ứng đủ điều kiện.{" "}
-                                <Text
-                                    style={styles.linkText}
-                                    onPress={() => Linking.openURL("https://bvhttdl.gov.vn/")}
-                                >
-                                    Tham khảo quy định
-                                </Text>{" "}
-                                của Bộ Văn Hóa, Thể Thao và Du Lịch.
-                            </Text>
-                        ) : (
-                            <Text style={styles.confirmContent}>
-                                Phim dành cho mọi độ tuổi. Tôi xác nhận The Sun Cinema
-                                không được phép phục vụ khách hàng dưới 13 tuổi cho các
-                                suất chiếu kết thúc từ 22:00 và dưới 16 tuổi cho các suất
-                                chiếu kết thúc từ 23:00. Tôi đồng ý cung cấp giấy tờ tùy
-                                thân để xác thực độ tuổi người xem. The Sun Cinema sẽ không
-                                hoàn tiền nếu người xem không đáp ứng đủ điều kiện. Tham khảo{" "}
-                                <Text
-                                    style={styles.linkText}
-                                    onPress={() => Linking.openURL("https://bvhttdl.gov.vn/")}
-                                >
-                                    quy định
-                                </Text>{" "}
-                                của Bộ Văn Hóa, Thể Thao và Du Lịch.
-                            </Text>
-                        )}
+                        {getConfirmMessage()}
 
                         <View style={styles.confirmActions}>
                             <Pressable
