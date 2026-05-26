@@ -10,16 +10,64 @@ import {
     Modal,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import * as Location from "expo-location";
+import { calculateDistance } from "../../utils/locationUtils";
+
+const formatDistance = (dist: number) => {
+    if (dist < 1) {
+        return `${Math.round(dist * 1000)}m`;
+    }
+    return `${dist.toFixed(1).replace('.', ',')}km`;
+};
 
 export default function TheaterScreen({ navigation }: any) {
     const [expandedArea, setExpandedArea] = useState<string | null>(null);
     const [showMenu, setShowMenu] = useState(false);
     const [cinemas, setCinemas] = useState<any[]>([]);
+    const [suggestedCinemas, setSuggestedCinemas] = useState<any[]>([]);
+    const [hasLocationPermission, setHasLocationPermission] = useState<boolean | null>(null);
 
     React.useEffect(() => {
-        import('../../services/theaterService').then(module => {
-            module.default.getAllTheaters().then(data => setCinemas(data)).catch(console.log);
-        });
+        const fetchCinemasAndLocation = async () => {
+            try {
+                // Fetch cinemas from backend
+                const module = await import('../../services/theaterService');
+                let fetchedCinemas = await module.default.getAllTheaters();
+
+                // Request location permission
+                let { status } = await Location.requestForegroundPermissionsAsync();
+                
+                if (status !== 'granted') {
+                    setHasLocationPermission(false);
+                    setCinemas(fetchedCinemas); // Use default order
+                    return;
+                }
+
+                setHasLocationPermission(true);
+                let location = await Location.getCurrentPositionAsync({});
+                const userLat = location.coords.latitude;
+                const userLon = location.coords.longitude;
+
+                // Calculate distance for each cinema
+                fetchedCinemas = fetchedCinemas.map((cinema: any) => {
+                    if (cinema.latitude && cinema.longitude) {
+                        const distance = calculateDistance(userLat, userLon, cinema.latitude, cinema.longitude);
+                        return { ...cinema, distance };
+                    }
+                    return { ...cinema, distance: Infinity };
+                });
+
+                // Sort by distance
+                fetchedCinemas.sort((a: any, b: any) => a.distance - b.distance);
+                
+                setSuggestedCinemas(fetchedCinemas.slice(0, 5));
+                setCinemas(fetchedCinemas);
+            } catch (error) {
+                console.log(error);
+            }
+        };
+
+        fetchCinemasAndLocation();
     }, []);
 
     /* MOCK DATA
@@ -112,38 +160,61 @@ export default function TheaterScreen({ navigation }: any) {
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={32} color="#0b0b0b" />
+                    <Ionicons name="arrow-back" size={28} color="#D69A00" />
                 </TouchableOpacity>
 
                 <Text style={styles.headerTitle}>Chọn Rạp</Text>
 
                 <View style={styles.rightHeader}>
+                    {hasLocationPermission && (
+                        <TouchableOpacity style={styles.locationButton}>
+                             <Ionicons name="navigate-outline" size={26} color="#D69A00" />
+                        </TouchableOpacity>
+                    )}
                     <TouchableOpacity
                         onPress={() => setShowMenu(true)}
                         style={styles.menuButton}
                     >
-                        <Ionicons name="menu" size={34} color="#050505" />
+                        <Ionicons name="menu" size={32} color="#D69A00" />
                     </TouchableOpacity>
                 </View>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-                <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>GỢI Ý</Text>
-                </View>
+                {hasLocationPermission && suggestedCinemas.length > 0 && (
+                    <>
+                        <View style={styles.sectionHeader}>
+                            <Text style={styles.sectionTitle}>GỢI Ý GẦN BẠN</Text>
+                        </View>
 
-                <View style={styles.listBox}>
-                    {cinemas.slice(0, 5).map((cinema, index) => (
-                        <TouchableOpacity
-                            key={index}
-                            style={styles.itemRow}
-                            onPress={() => goToShowtime(cinema)}
-                        >
-                            <Text style={styles.cgv}>☀</Text>
-                            <Text style={styles.itemText}>{cinema.name}</Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
+                        <View style={styles.listBox}>
+                            {suggestedCinemas.map((cinema, index) => (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={styles.itemRow}
+                                    onPress={() => goToShowtime(cinema)}
+                                >
+                                    <View style={styles.itemLeft}>
+                                        <Text style={styles.itemText} numberOfLines={1}>
+                                            {cinema.name.startsWith('The Sun ') ? (
+                                                <><Text style={styles.brandText}>The Sun </Text>{cinema.name.substring(8)}</>
+                                            ) : cinema.name.startsWith('CGV ') ? (
+                                                <><Text style={styles.brandText}>CGV </Text>{cinema.name.substring(4)}</>
+                                            ) : (
+                                                cinema.name
+                                            )}
+                                        </Text>
+                                    </View>
+                                    {cinema.distance !== Infinity && (
+                                        <Text style={styles.distanceText}>
+                                            {formatDistance(cinema.distance)}
+                                        </Text>
+                                    )}
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </>
+                )}
 
                 {/* MOCK DATA
                 <View style={styles.sectionHeader}>
@@ -210,8 +281,22 @@ export default function TheaterScreen({ navigation }: any) {
                             style={styles.itemRow}
                             onPress={() => goToShowtime(cinema)}
                         >
-                            <Text style={styles.cgv}>☀</Text>
-                            <Text style={styles.itemText}>{cinema.name}</Text>
+                            <View style={styles.itemLeft}>
+                                <Text style={styles.itemText} numberOfLines={1}>
+                                    {cinema.name.startsWith('The Sun ') ? (
+                                        <><Text style={styles.brandText}>The Sun </Text>{cinema.name.substring(8)}</>
+                                    ) : cinema.name.startsWith('CGV ') ? (
+                                        <><Text style={styles.brandText}>CGV </Text>{cinema.name.substring(4)}</>
+                                    ) : (
+                                        cinema.name
+                                    )}
+                                </Text>
+                            </View>
+                            {hasLocationPermission && cinema.distance && cinema.distance !== Infinity && (
+                                <Text style={styles.distanceText}>
+                                    {formatDistance(cinema.distance)}
+                                </Text>
+                            )}
                         </TouchableOpacity>
                     ))}
                 </View>
@@ -361,6 +446,14 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
 
+    locationButton: {
+        width: 44,
+        height: 44,
+        justifyContent: "center",
+        alignItems: "center",
+        marginRight: 4,
+    },
+
     menuButton: {
         width: 44,
         height: 44,
@@ -392,19 +485,34 @@ const styles = StyleSheet.create({
         borderBottomColor: "#EFE9E1",
         flexDirection: "row",
         alignItems: "center",
+        justifyContent: "space-between",
         paddingHorizontal: 24,
     },
 
-    cgv: {
-        fontSize: 23,
-        color: "#F4DB1D",
-        marginRight: 10,
+    itemLeft: {
+        flexDirection: "row",
+        alignItems: "center",
+        flex: 1,
+    },
+
+    brandText: {
+        fontSize: 22,
+        color: "#D69A00",
+        fontWeight: "700",
     },
 
     itemText: {
-        flex: 1,
         fontSize: 22,
         color: "#463A32",
+        fontWeight: "500",
+        flexShrink: 1,
+    },
+
+    distanceText: {
+        fontSize: 18,
+        color: "#D69A00",
+        fontWeight: "600",
+        marginLeft: 12,
     },
 
     areaRow: {

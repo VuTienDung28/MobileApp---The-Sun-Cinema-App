@@ -59,6 +59,8 @@ namespace backend.DTOs
         public int CinemaId { get; set; }
         public string CinemaName { get; set; } = string.Empty;
         public string CinemaAddress { get; set; } = string.Empty;
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
         public ICollection<ShowtimeSlotDto> Showtimes { get; set; } = new List<ShowtimeSlotDto>();
     }
 
