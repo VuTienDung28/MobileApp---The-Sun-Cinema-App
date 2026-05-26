@@ -100,7 +100,7 @@ export default function SeatSelectionScreen({ navigation, route }: any) {
         if (seatType === 'VIP') return vipPrice;
         return normalPrice;
     };
-
+//Check ghế đơn lẻ
     const checkOrphans = (seats: any[], occupiedIds: number[]) => {
         let orphanCount = 0;
         for (let i = 0; i < seats.length; i++) {
@@ -119,7 +119,7 @@ export default function SeatSelectionScreen({ navigation, route }: any) {
         }
         return orphanCount;
     }
-
+// Chặn đặt quá nhiều vé 
     const toggleSeat = (seat: any) => {
         if (bookedSeatIds.includes(seat.id)) return;
 
@@ -166,7 +166,7 @@ export default function SeatSelectionScreen({ navigation, route }: any) {
     const totalPrice = selectedSeats.reduce((sum, seat) => {
         return sum + getSeatPrice(seat.type);
     }, 0);
-
+// Kiểm tra vé đơn lẻ
     const handleOpenConfirm = () => {
         if (selectedSeats.length === 0) return;
 

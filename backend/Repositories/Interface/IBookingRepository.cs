@@ -14,6 +14,7 @@ namespace backend.Repositories.Interface
         Task<Booking?> GetBookingByIdAsync(int id);
         Task UpdateBookingAsync(Booking booking);
         Task DeleteTicketsByBookingIdAsync(int bookingId);
+        Task<List<Seat>> GetSeatsByIdsAsync(List<int> seatIds);
         Task<string?> GetFirstUserIdAsync();
     }
 }

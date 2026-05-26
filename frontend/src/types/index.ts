@@ -99,12 +99,16 @@ export type RootStackParamList = {
 
   SeatSelection: {
     cinemaName: string;
+    cinemaId: number;
     movieId?: number;
     movieName: string;
     age: string;
     type: string;
     time: string;
     date: string;
+    showtimeId: number;
+    roomId: number;
+    roomName: string;
   };
 
   TotalTickets: undefined;

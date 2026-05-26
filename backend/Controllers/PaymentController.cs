@@ -87,8 +87,24 @@ namespace backend.Controllers
                             if (booking.BookingTime > DateTime.UtcNow.AddMinutes(-10))
                             {
                                 booking.Status = "Completed";
+
+                                var payment = new backend.Models.Payment
+                                {
+                                    BookingId = bookingId,
+                                    Amount = request.Amount,
+                                    PaymentDate = DateTime.UtcNow,
+                                    Status = "Success"
+                                };
+                                _context.Payments.Add(payment);
+
+                                var ticketsToUpdate = await _context.Tickets.Where(t => t.BookingId == bookingId).ToListAsync();
+                                foreach (var t in ticketsToUpdate)
+                                {
+                                    t.QrCodeUrl = $"https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={t.TicketCode}";
+                                }
+
                                 await _context.SaveChangesAsync();
-                                Console.WriteLine($"[BE] Đã cập nhật Booking {bookingId} thành Completed.");
+                                Console.WriteLine($"[BE] Đã cập nhật Booking {bookingId} thành Completed, tạo Payment và QR code.");
                             }
                             else
                             {

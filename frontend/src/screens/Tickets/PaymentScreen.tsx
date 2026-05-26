@@ -38,13 +38,13 @@ export default function PaymentScreen() {
             if (!isMounted || !isPolling.current || isCompleted) return;
 
             try {
-                const response = await axiosClient.get(`/Booking/${bookingId}/status`);
+                const response: any = await axiosClient.get(`/Booking/${bookingId}/status`);
                 
                 if (response?.status === 'Completed') {
-                    isPolling.current = false; // Dừng polling ngay lập tức
+                    isPolling.current = false; 
                     setIsCompleted(true);
                     await saveTicket();
-                    return; // Không gọi setTimeout nữa
+                    return; 
                 } else if (response?.status === 'Expired' || response?.status === 'Cancelled') {
                     isPolling.current = false;
                     showAlert('Thất bại', 'Đơn hàng đã hết hạn hoặc bị hủy.', { type: 'error' });
@@ -57,7 +57,7 @@ export default function PaymentScreen() {
 
             // Lên lịch gọi lại sau 3s nếu vẫn đang mount và chưa hoàn thành
             if (isMounted && isPolling.current) {
-                setTimeout(pollStatus, 30000);
+                setTimeout(pollStatus, 3000);
             }
         };
 
