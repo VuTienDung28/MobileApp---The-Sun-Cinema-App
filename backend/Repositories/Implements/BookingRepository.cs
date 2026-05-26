@@ -25,17 +25,21 @@ namespace backend.Repositories.Implements
 
             return await _db.Tickets
                 .Include(t => t.Booking)
-                .Where(t => seatIds.Contains(t.SeatId)
+                .Where(t => t.SeatId.HasValue && seatIds.Contains(t.SeatId.Value)
                             && t.Booking.ShowtimeId == showtimeId
                             && (t.Booking.Status == "Completed" ||
                                (t.Booking.Status == "Pending" && t.Booking.BookingTime > toleranceTime)))
-                .Select(t => t.SeatId)
+                .Select(t => t.SeatId.Value)
                 .ToListAsync();
         }
 
         public async Task<Showtime?> GetShowtimeByIdAsync(int showtimeId)
         {
-            return await _db.Showtimes.FindAsync(showtimeId);
+            return await _db.Showtimes
+                .Include(s => s.Movie)
+                .Include(s => s.Room)
+                .ThenInclude(r => r.Cinema)
+                .FirstOrDefaultAsync(s => s.Id == showtimeId);
         }
 
         public async Task<IDbContextTransaction> BeginTransactionAsync()
@@ -80,6 +84,11 @@ namespace backend.Repositories.Implements
         public async Task<string?> GetFirstUserIdAsync()
         {
             return await _db.Users.Select(u => u.Id).FirstOrDefaultAsync();
+        }
+
+        public async Task<List<Seat>> GetSeatsByIdsAsync(List<int> seatIds)
+        {
+            return await _db.Seats.Where(s => seatIds.Contains(s.Id)).ToListAsync();
         }
     }
 }

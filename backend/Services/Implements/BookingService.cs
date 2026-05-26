@@ -52,7 +52,27 @@ namespace backend.Services.Implements
                 throw ex;
             }
 
-            decimal totalPrice = showtime.BasePrice * request.SeatIds.Count;
+            var seats = await _bookingRepository.GetSeatsByIdsAsync(request.SeatIds);
+            decimal seatsPrice = 0;
+            
+            foreach (var seat in seats)
+            {
+                decimal currentPrice = showtime.BasePrice;
+                string type = seat.Type?.Trim().ToLower() ?? "";
+                
+                if (type == "vip")
+                {
+                    currentPrice += 20000;
+                }
+                else if (type == "couple" || type == "sweetbox" || type == "sweet box")
+                {
+                    currentPrice = (currentPrice + 20000) * 2 + 20000;
+                }
+                
+                seatsPrice += currentPrice;
+            }
+
+            decimal totalPrice = seatsPrice ;
 
             using var transaction = await _bookingRepository.BeginTransactionAsync();
             try
@@ -61,15 +81,46 @@ namespace backend.Services.Implements
                 {
                     UserId = userId,
                     ShowtimeId = request.ShowtimeId,
+                    MovieTitle = showtime.Movie?.Title ?? "",
+                    MoviePosterUrl = showtime.Movie?.ThumbnailPosterUrl ?? "",
+                    MovieDuration = showtime.Movie?.Duration ?? 0,
+                    MovieAgeRating = showtime.Movie?.AgeRestriction ?? "",
+                    MovieGenres = showtime.Movie?.MovieGenre ?? "",
+                    CinemaName = showtime.Room?.Cinema?.Name ?? "",
+                    CinemaAddress = showtime.Room?.Cinema?.Address ?? "",
+                    RoomName = showtime.Room?.Name ?? "",
+                    ComboNames = "", // To be populated if Combos are implemented
+                    ShowtimeStart = showtime.StartTime,
                     BookingTime = DateTime.UtcNow,
                     TotalPrice = totalPrice,
                     Status = "Pending"
                 };
 
-                var tickets = request.SeatIds.Select(seatId => new Ticket
+                var tickets = seats.Select(seat => 
                 {
-                    SeatId = seatId,
-                    Price = showtime.BasePrice
+                    decimal price = showtime.BasePrice;
+                    string type = seat.Type?.Trim().ToLower() ?? "";
+                    
+                    if (type == "vip")
+                    {
+                        price += 20000;
+                    }
+                    else if (type == "couple" || type == "sweetbox" || type == "sweet box")
+                    {
+                        price = (price + 20000) * 2 + 20000;
+                    }
+
+                    string ticketCode = "TIX-" + Guid.NewGuid().ToString("N").Substring(0, 8).ToUpper();
+
+                    return new Ticket
+                    {
+                        SeatId = seat.Id,
+                        SeatName = $"{seat.RowName}{seat.SeatNumber}",
+                        SeatType = seat.Type ?? "Standard",
+                        Price = price,
+                        TicketCode = ticketCode,
+                        QrCodeUrl = null // Can be populated later by payment callback
+                    };
                 }).ToList();
 
                 await _bookingRepository.CreateBookingWithTicketsAsync(booking, tickets);

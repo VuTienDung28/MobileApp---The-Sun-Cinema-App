@@ -67,7 +67,7 @@ namespace backend.Data
                 .HasOne(b => b.Showtime)
                 .WithMany(s => s.Bookings)
                 .HasForeignKey(b => b.ShowtimeId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.SetNull);
 
             builder.Entity<Showtime>()
                 .HasOne(s => s.Movie)
@@ -91,7 +91,7 @@ namespace backend.Data
                 .HasOne(t => t.Seat)
                 .WithMany(s => s.Tickets)
                 .HasForeignKey(t => t.SeatId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.SetNull);
                 
             // Ensure unique voucher code
             builder.Entity<Voucher>()

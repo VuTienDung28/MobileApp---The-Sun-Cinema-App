@@ -154,10 +154,10 @@ namespace backend.Repositories.Implements
         {
             var tenMinsAgo = DateTime.UtcNow.AddMinutes(-10);
             return await _db.Tickets
-                .Where(t => t.Booking.ShowtimeId == showtimeId &&
+                .Where(t => t.Booking.ShowtimeId == showtimeId && t.SeatId.HasValue &&
                             (t.Booking.Status == "Completed" || 
                             (t.Booking.Status == "Pending" && t.Booking.BookingTime > tenMinsAgo)))
-                .Select(t => t.SeatId)
+                .Select(t => t.SeatId.Value)
                 .ToListAsync();
         }
     }

@@ -103,11 +103,11 @@ namespace backend.Services.Implements
             // Xóa ghế cũ (nếu có) trước khi tạo lại
             await _seatRepository.DeleteAllByRoomIdAsync(roomId);
 
-            // Hàm map cột tương đối (do user nhập) sang cột vật lý (để lưu DB và vẽ UI)
-            // Nếu đánh số từ phải sang trái, cột 1 của user sẽ là cột TotalColumns ngoài cùng bên phải.
             int MapToPhysicalColumn(int inputCol)
             {
-                return dto.IsNumberingFromRight ? (dto.TotalColumns - inputCol + 1) : inputCol;
+                // Từ khi dùng Interactive Builder, Frontend đã map cột trực quan (Cột 1 luôn ở bên trái)
+                // Nên không cần đảo ngược cấu trúc cột vật lý nữa. Việc đánh số ngược đã được xử lý bằng .Reverse() bên dưới.
+                return inputCol;
             }
 
             // Tính danh sách ColumnIndex thực sự có ghế (loại bỏ cột lối đi đã map vật lý)
