@@ -114,6 +114,13 @@ builder.Services.AddScoped<PaymentService>();
 builder.Services.AddScoped<IStorageService, MinIOStorageService>();
 builder.Services.Configure<MinIOOptions>(builder.Configuration.GetSection("MinIO"));
 
+// ===== Email Configuration =====
+builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("Email"));
+builder.Services.AddScoped<IEmailService, EmailService>();
+
+// ===== Memory Cache (dùng cho OTP quên mật khẩu) =====
+builder.Services.AddMemoryCache();
+
 
 // ===== CORS Configuration =====
 builder.Services.AddCors(options =>

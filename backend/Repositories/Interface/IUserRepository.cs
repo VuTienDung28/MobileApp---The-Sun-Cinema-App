@@ -14,5 +14,7 @@ namespace backend.Repositories.Interface
         Task<ApplicationUser?> FindByIdAsync(string userId);
         Task<IdentityResult> UpdateAsync(ApplicationUser user);
         Task<IdentityResult> ChangePasswordAsync(ApplicationUser user, string currentPassword, string newPassword);
+        Task<string> GeneratePasswordResetTokenAsync(ApplicationUser user);
+        Task<IdentityResult> ResetPasswordAsync(ApplicationUser user, string token, string newPassword);
     }
 }

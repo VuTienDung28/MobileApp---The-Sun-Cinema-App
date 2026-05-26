@@ -75,6 +75,39 @@ public class AuthController : ControllerBase
     }
 
 
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto forgotPasswordDto)
+    {
+        try
+        {
+            await _authService.ForgotPasswordAsync(forgotPasswordDto);
+            // Luôn trả về 200 dù email có tồn tại hay không (bảo mật: không lộ user)
+            return Ok(ApiResponse<string>.Success(null, "Nếu email tồn tại, mã OTP đã được gửi.", "OTP_SENT"));
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, ApiResponse<string>.Failure("SERVER_ERROR", "Lỗi hệ thống khi gửi OTP.", ex.Message));
+        }
+    }
+
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto resetPasswordDto)
+    {
+        try
+        {
+            await _authService.ResetPasswordAsync(resetPasswordDto);
+            return Ok(ApiResponse<string>.Success(null, "Đặt lại mật khẩu thành công", "RESET_SUCCESS"));
+        }
+        catch (UserFriendlyException ex)
+        {
+            return BadRequest(ApiResponse<string>.Failure(ex.ErrorCode, ex.Message));
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, ApiResponse<string>.Failure("SERVER_ERROR", "Lỗi hệ thống khi đặt lại mật khẩu.", ex.Message));
+        }
+    }
+
     [Authorize(Policy = "AdminOnly")]
     [HttpGet("admin-test")]
     public IActionResult AdminTest()
