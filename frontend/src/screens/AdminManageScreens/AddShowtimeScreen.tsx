@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -23,6 +23,23 @@ import showtimeService from '../../services/showtimeService';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AddShowtime'>;
 
+const SHOWING_WINDOW_DAYS = 20;
+
+const getDateStart = (date: Date) => {
+  const nextDate = new Date(date);
+  nextDate.setHours(0, 0, 0, 0);
+  return nextDate;
+};
+
+const canScheduleMovieAt = (movie: MovieListItem, showtimeStart: Date) => {
+  const releaseDate = getDateStart(new Date(movie.releaseDate));
+  const showtimeDate = getDateStart(showtimeStart);
+  const lastShowingDate = new Date(releaseDate);
+  lastShowingDate.setDate(lastShowingDate.getDate() + SHOWING_WINDOW_DAYS);
+
+  return releaseDate <= showtimeDate && showtimeDate <= lastShowingDate;
+};
+
 const AddShowtimeScreen: React.FC<Props> = ({ navigation, route }) => {
   const { cinemaId, cinemaName } = route.params;
 
@@ -46,6 +63,20 @@ const AddShowtimeScreen: React.FC<Props> = ({ navigation, route }) => {
   // Modals for Selection
   const [showMovieModal, setShowMovieModal] = useState(false);
   const [showRoomModal, setShowRoomModal] = useState(false);
+
+  const availableMovies = useMemo(
+    () => movies.filter((movie) => canScheduleMovieAt(movie, startTime)),
+    [movies, startTime]
+  );
+
+  useEffect(() => {
+    if (!selectedMovieId || movies.length === 0) return;
+
+    const selectedMovie = movies.find((movie) => movie.id === selectedMovieId);
+    if (selectedMovie && !canScheduleMovieAt(selectedMovie, startTime)) {
+      setSelectedMovieId(null);
+    }
+  }, [movies, selectedMovieId, startTime]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -84,6 +115,12 @@ const AddShowtimeScreen: React.FC<Props> = ({ navigation, route }) => {
       return;
     }
 
+    const selectedMovie = movies.find((movie) => movie.id === selectedMovieId);
+    if (!selectedMovie || !canScheduleMovieAt(selectedMovie, startTime)) {
+      useAlertStore.getState().showAlert('Lỗi', 'Chỉ có thể tạo suất chiếu trong 20 ngày kể từ ngày phát hành phim', { type: 'error' });
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       
@@ -112,6 +149,10 @@ const AddShowtimeScreen: React.FC<Props> = ({ navigation, route }) => {
 
   const getSelectedMovieTitle = () => {
     return movies.find(m => m.id === selectedMovieId)?.title || 'Chọn phim...';
+  };
+
+  const updateStartTime = (nextStartTime: Date) => {
+    setStartTime(nextStartTime);
   };
 
   const getSelectedRoomName = () => {
@@ -182,7 +223,7 @@ const AddShowtimeScreen: React.FC<Props> = ({ navigation, route }) => {
                       const newDate = new Date(startTime);
                       const [y, m, d] = dateStr.split('-');
                       newDate.setFullYear(parseInt(y), parseInt(m) - 1, parseInt(d));
-                      setStartTime(newDate);
+                      updateStartTime(newDate);
                     }
                   }}
                 />
@@ -200,7 +241,7 @@ const AddShowtimeScreen: React.FC<Props> = ({ navigation, route }) => {
                       const newDate = new Date(startTime);
                       const [h, min] = timeStr.split(':');
                       newDate.setHours(parseInt(h), parseInt(min));
-                      setStartTime(newDate);
+                      updateStartTime(newDate);
                     }
                   }}
                 />
@@ -230,7 +271,7 @@ const AddShowtimeScreen: React.FC<Props> = ({ navigation, route }) => {
                 if (date) {
                   const newDate = new Date(startTime);
                   newDate.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
-                  setStartTime(newDate);
+                  updateStartTime(newDate);
                 }
               }}
             />
@@ -247,7 +288,7 @@ const AddShowtimeScreen: React.FC<Props> = ({ navigation, route }) => {
                 if (date) {
                   const newDate = new Date(startTime);
                   newDate.setHours(date.getHours(), date.getMinutes());
-                  setStartTime(newDate);
+                  updateStartTime(newDate);
                 }
               }}
             />
@@ -291,21 +332,32 @@ const AddShowtimeScreen: React.FC<Props> = ({ navigation, route }) => {
               </TouchableOpacity>
             </View>
             <ScrollView>
-              {movies.map(movie => (
-                <TouchableOpacity 
-                  key={movie.id} 
-                  style={styles.modalOption}
-                  onPress={() => {
-                    setSelectedMovieId(movie.id);
-                    setShowMovieModal(false);
-                  }}
-                >
-                  <Text style={[styles.modalOptionText, selectedMovieId === movie.id && { color: '#FFCC00', fontWeight: 'bold' }]}>
-                    {movie.title}
-                  </Text>
-                  {selectedMovieId === movie.id && <Ionicons name="checkmark" size={20} color="#FFCC00" />}
-                </TouchableOpacity>
-              ))}
+              {availableMovies.length === 0 ? (
+                <Text style={styles.emptyModalText}>
+                  Không có phim nào hợp lệ trong 20 ngày kể từ ngày phát hành cho thời gian chiếu này.
+                </Text>
+              ) : (
+                availableMovies.map(movie => (
+                  <TouchableOpacity 
+                    key={movie.id} 
+                    style={styles.modalOption}
+                    onPress={() => {
+                      setSelectedMovieId(movie.id);
+                      setShowMovieModal(false);
+                    }}
+                  >
+                    <View style={styles.modalOptionContent}>
+                      <Text style={[styles.modalOptionText, selectedMovieId === movie.id && { color: '#FFCC00', fontWeight: 'bold' }]}>
+                        {movie.title}
+                      </Text>
+                      <Text style={styles.movieReleaseText}>
+                        Phát hành: {formatDate(new Date(movie.releaseDate))}
+                      </Text>
+                    </View>
+                    {selectedMovieId === movie.id && <Ionicons name="checkmark" size={20} color="#FFCC00" />}
+                  </TouchableOpacity>
+                ))
+              )}
             </ScrollView>
           </View>
         </View>
@@ -416,7 +468,10 @@ const styles = StyleSheet.create({
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottomWidth: 1, borderBottomColor: '#F3F4F6', paddingBottom: 12 },
   modalTitle: { fontSize: 18, fontWeight: '700', color: '#1A1A2E' },
   modalOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#F9FAFB' },
+  modalOptionContent: { flex: 1, paddingRight: 12 },
   modalOptionText: { fontSize: 15, color: '#4B5563' },
+  movieReleaseText: { marginTop: 4, fontSize: 12, color: '#8A7851' },
+  emptyModalText: { textAlign: 'center', padding: 20, color: '#8A7851', lineHeight: 20 },
 });
 
 export default AddShowtimeScreen;

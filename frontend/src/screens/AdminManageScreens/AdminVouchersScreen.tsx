@@ -9,16 +9,100 @@ import {
   ScrollView,
   Modal,
   TextInput,
-  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types';
 import useAlertStore from '../../store/useAlertStore';
 import voucherService, { VoucherDto, CreateVoucherDto } from '../../services/voucherService';
-import DateTimePicker from '@react-native-community/datetimepicker';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AdminVouchers'>;
+type DateTimeTarget = 'startDate' | 'endDate';
+
+type DateTimeDraft = {
+  target: DateTimeTarget;
+  day: string;
+  month: string;
+  year: string;
+  hour: string;
+  minute: string;
+};
+
+const createDefaultStartDate = () => new Date().toISOString();
+
+const createDefaultEndDate = () => {
+  const date = new Date();
+  date.setDate(date.getDate() + 7);
+  return date.toISOString();
+};
+
+const getValidDate = (value: string) => {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? new Date() : date;
+};
+
+const formatDate = (value: string) =>
+  getValidDate(value).toLocaleDateString('vi-VN');
+
+const formatTime = (value: string) =>
+  getValidDate(value).toLocaleTimeString('vi-VN', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+const formatDateTime = (value: string) =>
+  `${formatDate(value)} ${formatTime(value)}`;
+
+const pad2 = (value: number) => value.toString().padStart(2, '0');
+
+const onlyDigits = (value: string) => value.replace(/\D/g, '');
+
+const clampNumber = (
+  value: string,
+  min: number,
+  max: number,
+  fallback: number
+) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(Math.max(parsed, min), max);
+};
+
+const createDateTimeDraft = (
+  target: DateTimeTarget,
+  value: string
+): DateTimeDraft => {
+  const date = getValidDate(value);
+  return {
+    target,
+    day: pad2(date.getDate()),
+    month: pad2(date.getMonth() + 1),
+    year: date.getFullYear().toString(),
+    hour: pad2(date.getHours()),
+    minute: pad2(date.getMinutes()),
+  };
+};
+
+const buildDateTimeValue = (currentValue: string, draft: DateTimeDraft) => {
+  const currentDate = getValidDate(currentValue);
+  const fallbackYear = currentDate.getFullYear();
+  const fallbackMonth = currentDate.getMonth() + 1;
+  const fallbackDay = currentDate.getDate();
+  const fallbackHour = currentDate.getHours();
+  const fallbackMinute = currentDate.getMinutes();
+
+  const year = clampNumber(draft.year, 1970, 2100, fallbackYear);
+  const month = clampNumber(draft.month, 1, 12, fallbackMonth);
+  const maxDay = new Date(year, month, 0).getDate();
+  const day = clampNumber(draft.day, 1, maxDay, fallbackDay);
+  const hour = clampNumber(draft.hour, 0, 23, fallbackHour);
+  const minute = clampNumber(draft.minute, 0, 59, fallbackMinute);
+
+  const nextDate = new Date(currentDate);
+  nextDate.setFullYear(year, month - 1, day);
+  nextDate.setHours(hour, minute, 0, 0);
+  return nextDate.toISOString();
+};
 
 const AdminVouchersScreen: React.FC<Props> = ({ navigation }) => {
   const [vouchers, setVouchers] = useState<VoucherDto[]>([]);
@@ -34,13 +118,50 @@ const AdminVouchersScreen: React.FC<Props> = ({ navigation }) => {
     discountValue: 0,
     minOrderValue: 0,
     maxDiscount: undefined,
-    startDate: new Date().toISOString().split('T')[0],
-    endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    startDate: createDefaultStartDate(),
+    endDate: createDefaultEndDate(),
     usageLimit: 100,
   });
 
-  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
-  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+  const [dateTimeDraft, setDateTimeDraft] = useState<DateTimeDraft | null>(null);
+
+  const openDateTimePicker = (
+    picker: 'startDate' | 'endDate' | 'startTime' | 'endTime'
+  ) => {
+    const target: DateTimeTarget =
+      picker === 'startDate' || picker === 'startTime'
+        ? 'startDate'
+        : 'endDate';
+    setDateTimeDraft(createDateTimeDraft(target, formData[target]));
+  };
+
+  const closeDateTimePickers = () => {
+    setDateTimeDraft(null);
+  };
+
+  const updateDateTimeDraft = (
+    field: keyof Omit<DateTimeDraft, 'target'>,
+    value: string
+  ) => {
+    setDateTimeDraft((current) =>
+      current ? { ...current, [field]: onlyDigits(value) } : current
+    );
+  };
+
+  const applyDateTimeDraft = () => {
+    if (!dateTimeDraft) return;
+
+    const nextValue = buildDateTimeValue(
+      formData[dateTimeDraft.target],
+      dateTimeDraft
+    );
+
+    setFormData({
+      ...formData,
+      [dateTimeDraft.target]: nextValue,
+    });
+    closeDateTimePickers();
+  };
 
   const fetchVouchers = async () => {
     try {
@@ -60,10 +181,17 @@ const AdminVouchersScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleSaveVoucher = async () => {
     // Validation
-    if (!formData.code.trim()) {
+    const normalizedCode = formData.code.trim().toUpperCase();
+
+    if (!normalizedCode) {
       useAlertStore.getState().showAlert('Lỗi', 'Vui lòng nhập mã voucher', { type: 'error' });
       return;
     }
+
+    const voucherPayload: CreateVoucherDto = {
+      ...formData,
+      code: normalizedCode,
+    };
     
     if (formData.discountValue <= 0) {
       useAlertStore.getState().showAlert('Lỗi', 'Giá trị giảm giá phải lớn hơn 0', { type: 'error' });
@@ -75,7 +203,7 @@ const AdminVouchersScreen: React.FC<Props> = ({ navigation }) => {
       return;
     }
     
-    if (formData.startDate > formData.endDate) {
+    if (new Date(formData.startDate) >= new Date(formData.endDate)) {
       useAlertStore.getState().showAlert('Lỗi', 'Ngày kết thúc phải sau ngày bắt đầu', { type: 'error' });
       return;
     }
@@ -88,10 +216,10 @@ const AdminVouchersScreen: React.FC<Props> = ({ navigation }) => {
     try {
       setIsLoading(true);
       if (editingVoucher) {
-        await voucherService.updateVoucher(editingVoucher.id, formData);
+        await voucherService.updateVoucher(editingVoucher.id, voucherPayload);
         useAlertStore.getState().showAlert('Thành công', 'Cập nhật voucher thành công!', { type: 'success' });
       } else {
-        await voucherService.createVoucher(formData);
+        await voucherService.createVoucher(voucherPayload);
         useAlertStore.getState().showAlert('Thành công', 'Thêm voucher thành công!', { type: 'success' });
       }
       setModalVisible(false);
@@ -139,6 +267,7 @@ const AdminVouchersScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const resetForm = () => {
+    closeDateTimePickers();
     setEditingVoucher(null);
     setFormData({
       code: '',
@@ -147,8 +276,8 @@ const AdminVouchersScreen: React.FC<Props> = ({ navigation }) => {
       discountValue: 0,
       minOrderValue: 0,
       maxDiscount: undefined,
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      startDate: createDefaultStartDate(),
+      endDate: createDefaultEndDate(),
       usageLimit: 100,
     });
   };
@@ -167,8 +296,8 @@ const AdminVouchersScreen: React.FC<Props> = ({ navigation }) => {
       discountValue: voucher.discountValue,
       minOrderValue: voucher.minOrderValue,
       maxDiscount: voucher.maxDiscount,
-      startDate: voucher.startDate.split('T')[0],
-      endDate: voucher.endDate.split('T')[0],
+      startDate: voucher.startDate,
+      endDate: voucher.endDate,
       usageLimit: voucher.usageLimit,
     });
     setModalVisible(true);
@@ -287,7 +416,7 @@ const AdminVouchersScreen: React.FC<Props> = ({ navigation }) => {
                 <View style={styles.detailRow}>
                   <Ionicons name="calendar-outline" size={16} color="#FFCC00" />
                   <Text style={styles.detailText}>
-                    {new Date(voucher.startDate).toLocaleDateString('vi-VN')} - {new Date(voucher.endDate).toLocaleDateString('vi-VN')}
+                    {formatDateTime(voucher.startDate)} - {formatDateTime(voucher.endDate)}
                   </Text>
                 </View>
                 
@@ -357,7 +486,9 @@ const AdminVouchersScreen: React.FC<Props> = ({ navigation }) => {
                 <TextInput
                   style={styles.input}
                   value={formData.code}
-                  onChangeText={(text) => setFormData({ ...formData, code: text.toUpperCase() })}
+                  onChangeText={(text) =>
+                    setFormData({ ...formData, code: text.toUpperCase() })
+                  }
                   placeholder="VD: WELCOME20"
                   placeholderTextColor="#999"
                   autoCapitalize="characters"
@@ -445,28 +576,52 @@ const AdminVouchersScreen: React.FC<Props> = ({ navigation }) => {
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Ngày bắt đầu *</Text>
-                <TouchableOpacity 
-                  style={styles.dateButton}
-                  onPress={() => setShowStartDatePicker(true)}
-                >
-                  <Ionicons name="calendar" size={20} color="#FFCC00" />
-                  <Text style={styles.dateText}>
-                    {new Date(formData.startDate).toLocaleDateString('vi-VN')}
-                  </Text>
-                </TouchableOpacity>
+                <View style={styles.dateTimeRow}>
+                  <TouchableOpacity
+                    style={[styles.dateButton, styles.dateField]}
+                    onPress={() => openDateTimePicker('startDate')}
+                  >
+                    <Ionicons name="calendar" size={20} color="#FFCC00" />
+                    <Text style={styles.dateText}>
+                      {formatDate(formData.startDate)}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.dateButton, styles.timeField]}
+                    onPress={() => openDateTimePicker('startTime')}
+                  >
+                    <Ionicons name="time" size={20} color="#FFCC00" />
+                    <Text style={styles.dateText}>
+                      {formatTime(formData.startDate)}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Ngày kết thúc *</Text>
-                <TouchableOpacity 
-                  style={styles.dateButton}
-                  onPress={() => setShowEndDatePicker(true)}
-                >
-                  <Ionicons name="calendar" size={20} color="#FFCC00" />
-                  <Text style={styles.dateText}>
-                    {new Date(formData.endDate).toLocaleDateString('vi-VN')}
-                  </Text>
-                </TouchableOpacity>
+                <View style={styles.dateTimeRow}>
+                  <TouchableOpacity
+                    style={[styles.dateButton, styles.dateField]}
+                    onPress={() => openDateTimePicker('endDate')}
+                  >
+                    <Ionicons name="calendar" size={20} color="#FFCC00" />
+                    <Text style={styles.dateText}>
+                      {formatDate(formData.endDate)}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.dateButton, styles.timeField]}
+                    onPress={() => openDateTimePicker('endTime')}
+                  >
+                    <Ionicons name="time" size={20} color="#FFCC00" />
+                    <Text style={styles.dateText}>
+                      {formatTime(formData.endDate)}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
 
               <View style={styles.inputGroup}>
@@ -505,33 +660,111 @@ const AdminVouchersScreen: React.FC<Props> = ({ navigation }) => {
         </View>
       </Modal>
 
-      {showStartDatePicker && (
-        <DateTimePicker
-          value={new Date(formData.startDate)}
-          mode="date"
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={(event, selectedDate) => {
-            setShowStartDatePicker(false);
-            if (selectedDate) {
-              setFormData({ ...formData, startDate: selectedDate.toISOString().split('T')[0] });
-            }
-          }}
-        />
-      )}
+      <Modal
+        visible={!!dateTimeDraft}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={closeDateTimePickers}
+      >
+        <View style={styles.dateEditorOverlay}>
+          <View style={styles.dateEditorContent}>
+            <Text style={styles.dateEditorTitle}>
+              {dateTimeDraft?.target === 'startDate'
+                ? 'Chỉnh ngày bắt đầu'
+                : 'Chỉnh ngày kết thúc'}
+            </Text>
 
-      {showEndDatePicker && (
-        <DateTimePicker
-          value={new Date(formData.endDate)}
-          mode="date"
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={(event, selectedDate) => {
-            setShowEndDatePicker(false);
-            if (selectedDate) {
-              setFormData({ ...formData, endDate: selectedDate.toISOString().split('T')[0] });
-            }
-          }}
-        />
-      )}
+            <Text style={styles.dateEditorLabel}>Ngày</Text>
+            <View style={styles.dateEditorRow}>
+              <View style={styles.dateEditorField}>
+                <Text style={styles.dateEditorFieldLabel}>Ngày</Text>
+                <TextInput
+                  style={styles.dateEditorInput}
+                  value={dateTimeDraft?.day ?? ''}
+                  onChangeText={(text) => updateDateTimeDraft('day', text)}
+                  keyboardType="numeric"
+                  maxLength={2}
+                  selectTextOnFocus
+                />
+              </View>
+
+              <View style={styles.dateEditorField}>
+                <Text style={styles.dateEditorFieldLabel}>Tháng</Text>
+                <TextInput
+                  style={styles.dateEditorInput}
+                  value={dateTimeDraft?.month ?? ''}
+                  onChangeText={(text) => updateDateTimeDraft('month', text)}
+                  keyboardType="numeric"
+                  maxLength={2}
+                  selectTextOnFocus
+                />
+              </View>
+
+              <View style={styles.dateEditorField}>
+                <Text style={styles.dateEditorFieldLabel}>Năm</Text>
+                <TextInput
+                  style={styles.dateEditorInput}
+                  value={dateTimeDraft?.year ?? ''}
+                  onChangeText={(text) => updateDateTimeDraft('year', text)}
+                  keyboardType="numeric"
+                  maxLength={4}
+                  selectTextOnFocus
+                />
+              </View>
+            </View>
+
+            <Text style={styles.dateEditorLabel}>Giờ</Text>
+            <View style={styles.dateEditorRow}>
+              <View style={styles.dateEditorField}>
+                <Text style={styles.dateEditorFieldLabel}>Giờ</Text>
+                <TextInput
+                  style={styles.dateEditorInput}
+                  value={dateTimeDraft?.hour ?? ''}
+                  onChangeText={(text) => updateDateTimeDraft('hour', text)}
+                  keyboardType="numeric"
+                  maxLength={2}
+                  selectTextOnFocus
+                />
+              </View>
+
+              <View style={styles.dateEditorField}>
+                <Text style={styles.dateEditorFieldLabel}>Phút</Text>
+                <TextInput
+                  style={styles.dateEditorInput}
+                  value={dateTimeDraft?.minute ?? ''}
+                  onChangeText={(text) => updateDateTimeDraft('minute', text)}
+                  keyboardType="numeric"
+                  maxLength={2}
+                  selectTextOnFocus
+                />
+              </View>
+            </View>
+
+            <View style={styles.dateEditorButtons}>
+              <TouchableOpacity
+                style={[
+                  styles.dateEditorButton,
+                  styles.dateEditorCancelButton,
+                ]}
+                onPress={closeDateTimePickers}
+              >
+                <Text style={styles.dateEditorCancelText}>Hủy</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.dateEditorButton,
+                  styles.dateEditorConfirmButton,
+                ]}
+                onPress={applyDateTimeDraft}
+              >
+                <Text style={styles.dateEditorConfirmText}>Áp dụng</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 };
@@ -748,6 +981,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#333',
   },
+  dateTimeRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
   dateButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -757,6 +994,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     backgroundColor: '#FFF',
+  },
+  dateField: {
+    flex: 1.25,
+  },
+  timeField: {
+    flex: 0.85,
   },
   dateText: {
     fontSize: 14,
@@ -788,6 +1031,80 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 16,
     fontWeight: '600',
+    color: '#1A1A2E',
+  },
+  dateEditorOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  dateEditorContent: {
+    backgroundColor: '#FFF',
+    borderRadius: 16,
+    padding: 18,
+  },
+  dateEditorTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1A1A2E',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  dateEditorLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#333',
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  dateEditorRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  dateEditorField: {
+    flex: 1,
+  },
+  dateEditorFieldLabel: {
+    fontSize: 12,
+    color: '#777',
+    marginBottom: 6,
+  },
+  dateEditorInput: {
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    fontSize: 16,
+    textAlign: 'center',
+    color: '#1A1A2E',
+  },
+  dateEditorButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 20,
+  },
+  dateEditorButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  dateEditorCancelButton: {
+    backgroundColor: '#F5F5F5',
+  },
+  dateEditorConfirmButton: {
+    backgroundColor: '#FFCC00',
+  },
+  dateEditorCancelText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#666',
+  },
+  dateEditorConfirmText: {
+    fontSize: 15,
+    fontWeight: '800',
     color: '#1A1A2E',
   },
 });

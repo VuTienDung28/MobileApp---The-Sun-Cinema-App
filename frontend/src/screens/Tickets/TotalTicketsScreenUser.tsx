@@ -6,14 +6,15 @@ import {
     SafeAreaView,
     TouchableOpacity,
     ScrollView,
-    Alert,
     Modal,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import paymentService from "../../services/paymentService";
 import axiosClient from "../../api/axiosClient";
 import useAlertStore from "../../store/useAlertStore";
+import { VoucherDto } from "../../services/voucherService";
+import VoucherSelector, {
+    calculateVoucherDiscount,
+} from "./VoucherSelector";
 
 const foodsData = [
     {
@@ -42,6 +43,30 @@ const foodsData = [
     },
 ];
 
+type HoldBookingResponse = {
+    bookingId: number | string;
+    qrUrl: string;
+    totalPrice: number;
+    seatTotal?: number;
+    foodTotal?: number;
+    discountAmount?: number;
+    voucherId?: number | null;
+    voucherCode?: string | null;
+};
+
+const toNumber = (value: unknown, fallback = 0) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const getApiErrorMessage = (error: any, fallback: string) =>
+    error?.Message ||
+    error?.message ||
+    error?.Error ||
+    error?.error ||
+    error?.data?.message ||
+    fallback;
+
 export default function TotalTicketsScreenUser({ navigation, route }: any) {
     const {
         cinemaName = "The Sun Cinema",
@@ -64,6 +89,7 @@ export default function TotalTicketsScreenUser({ navigation, route }: any) {
     const [checked, setChecked] = useState(true);
     const [showExitModal, setShowExitModal] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [appliedVoucher, setAppliedVoucher] = useState<VoucherDto | null>(null);
     const showAlert = useAlertStore(state => state.showAlert);
 
     const selectedFoodList = useMemo(() => {
@@ -89,6 +115,13 @@ export default function TotalTicketsScreenUser({ navigation, route }: any) {
 
     const realFinalTotal =
         finalTotal || Number(realSeatTotal || 0) + Number(realFoodTotal || 0);
+
+    const voucherDiscount = calculateVoucherDiscount(
+        appliedVoucher,
+        realFinalTotal
+    );
+
+    const payableTotal = Math.max(realFinalTotal - voucherDiscount, 0);
 
     const handleBack = () => {
         setShowExitModal(true);
@@ -164,19 +197,54 @@ export default function TotalTicketsScreenUser({ navigation, route }: any) {
             setLoading(true);
             
             // Gọi API giữ ghế thật thay vì mock checkout
-            const response: any = await axiosClient.post('/Booking/hold', {
+            const response = await axiosClient.post<any, HoldBookingResponse>('/Booking/hold', {
                 showtimeId: showtimeId,
-                seatIds: selectedSeatIds
+                seatIds: selectedSeatIds,
+                foodTotal: realFoodTotal,
+                voucherCode: appliedVoucher?.code ?? null,
             });
 
             if (response && response.qrUrl) {
+                const hasServerPriceBreakdown =
+                    response.seatTotal !== undefined ||
+                    response.foodTotal !== undefined ||
+                    response.discountAmount !== undefined;
+
+                const serverSeatTotal = hasServerPriceBreakdown
+                    ? toNumber(response.seatTotal)
+                    : toNumber(response.totalPrice);
+                const serverFoodTotal = hasServerPriceBreakdown
+                    ? toNumber(response.foodTotal)
+                    : realFoodTotal;
+                const serverBaseTotal = serverSeatTotal + serverFoodTotal;
+                const serverVoucherDiscount = hasServerPriceBreakdown
+                    ? toNumber(response.discountAmount)
+                    : calculateVoucherDiscount(appliedVoucher, serverBaseTotal);
+                const serverPayableTotal = hasServerPriceBreakdown
+                    ? toNumber(response.totalPrice)
+                    : Math.max(serverBaseTotal - serverVoucherDiscount, 0);
+
                 navigation.navigate("PaymentScreen", {
                     bookingId: response.bookingId,
-                    amount: response.totalPrice + realFoodTotal, // Tiền ghế + Tiền bắp nước
+                    amount: serverPayableTotal,
                     qrUrl: response.qrUrl,
                     ticketData: {
                         cinemaName, movieName, age, type, time, date, selectedSeats,
-                        seatTotal: response.totalPrice, foodTotal: realFoodTotal, finalTotal: response.totalPrice + realFoodTotal, foods: selectedFoodList
+                        seatTotal: serverSeatTotal,
+                        foodTotal: serverFoodTotal,
+                        voucherDiscount: serverVoucherDiscount,
+                        voucher: appliedVoucher
+                            ? {
+                                  id: appliedVoucher.id,
+                                  code: appliedVoucher.code,
+                                  discountType: appliedVoucher.discountType,
+                                  discountValue: appliedVoucher.discountValue,
+                                  minOrderValue: appliedVoucher.minOrderValue,
+                                  maxDiscount: appliedVoucher.maxDiscount,
+                              }
+                            : null,
+                        finalTotal: serverPayableTotal,
+                        foods: selectedFoodList
                     }
                 });
             } else {
@@ -184,8 +252,16 @@ export default function TotalTicketsScreenUser({ navigation, route }: any) {
             }
         } catch (error: any) {
             console.error("Checkout error:", error);
-            
-            if (error?.ConflictSeats || error?.conflictSeats || (error?.Message && String(error.Message).includes("Ghế đã bị bán"))) {
+            const errorMessage = getApiErrorMessage(
+                error,
+                "Đã có lỗi xảy ra khi kết nối thanh toán."
+            );
+            const hasSeatConflict =
+                !!(error?.ConflictSeats || error?.conflictSeats) ||
+                String(errorMessage).includes("Ghế") ||
+                String(errorMessage).toLowerCase().includes("seat");
+
+            if (hasSeatConflict) {
                 showAlert(
                     "Rất tiếc",
                     "Người khác đang giao dịch thanh toán với ghế này. Vui lòng chọn ghế khác.",
@@ -203,7 +279,7 @@ export default function TotalTicketsScreenUser({ navigation, route }: any) {
                     }
                 );
             } else {
-                showAlert("Lỗi", error?.Message || error?.message || "Đã có lỗi xảy ra khi kết nối thanh toán.", { type: 'error' });
+                showAlert("Lỗi", errorMessage, { type: 'error' });
             }
         } finally {
             setLoading(false);
@@ -268,7 +344,7 @@ export default function TotalTicketsScreenUser({ navigation, route }: any) {
 
                         <Text style={styles.totalMain}>
                             Tổng Thanh Toán:{" "}
-                            {realFinalTotal.toLocaleString("vi-VN")} đ
+                            {payableTotal.toLocaleString("vi-VN")} đ
                         </Text>
                     </View>
                 </View>
@@ -324,10 +400,16 @@ export default function TotalTicketsScreenUser({ navigation, route }: any) {
                     </>
                 )}
 
+                <VoucherSelector
+                    orderTotal={realFinalTotal}
+                    selectedVoucher={appliedVoucher}
+                    onChange={setAppliedVoucher}
+                />
+
                 <View style={styles.remainBox}>
                     <Text style={styles.remainLabel}>Tổng</Text>
                     <Text style={styles.remainValue}>
-                        {realFinalTotal.toLocaleString("vi-VN")} đ
+                        {payableTotal.toLocaleString("vi-VN")} đ
                     </Text>
                 </View>
 

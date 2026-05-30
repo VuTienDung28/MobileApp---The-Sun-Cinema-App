@@ -6,16 +6,15 @@ import {
     SafeAreaView, 
     TouchableOpacity, 
     Image, 
-    ActivityIndicator,
-    Alert
+    ActivityIndicator
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types';
 import useAlertStore from '../../store/useAlertStore';
 import axiosClient from '../../api/axiosClient';
+import { markVoucherAsUsed } from './voucherUsageStorage';
 
 export default function PaymentScreen() {
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -26,6 +25,7 @@ export default function PaymentScreen() {
     const showAlert = useAlertStore(state => state.showAlert);
     const [isCompleted, setIsCompleted] = useState(false);
     const isPolling = React.useRef(true);
+    const payableAmount = Math.round(Number(amount || 0));
 
     // Polling API để kiểm tra trạng thái an toàn bằng đệ quy setTimeout
     useEffect(() => {
@@ -100,7 +100,7 @@ export default function PaymentScreen() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     bookingId: bookingId,
-                    amount: amount
+                    amount: payableAmount
                 })
             });
 
@@ -132,6 +132,8 @@ export default function PaymentScreen() {
                 seats: ticketData?.selectedSeats || [],
                 seatTotal: ticketData?.seatTotal,
                 foodTotal: ticketData?.foodTotal,
+                voucher: ticketData?.voucher || null,
+                voucherDiscount: ticketData?.voucherDiscount || 0,
                 finalTotal: ticketData?.finalTotal,
                 foods: ticketData?.foods || [],
                 paymentMethod: "QR Code",
@@ -148,6 +150,8 @@ export default function PaymentScreen() {
                 "MY_TICKETS",
                 JSON.stringify(updatedTickets)
             );
+
+            await markVoucherAsUsed(ticketData?.voucher?.code);
 
             showAlert("Thành công", "Thanh toán thành công và vé đã được lưu.", {
                 type: 'success',
@@ -180,7 +184,7 @@ export default function PaymentScreen() {
                 <View style={styles.card}>
                     <Text style={styles.label}>Số tiền cần trả:</Text>
                     <Text style={styles.amount}>
-                        {amount ? amount.toLocaleString('vi-VN') : '0'} đ
+                        {payableAmount.toLocaleString('vi-VN')} đ
                     </Text>
 
                     {qrUrl ? (

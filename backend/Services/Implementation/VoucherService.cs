@@ -22,6 +22,7 @@ namespace backend.Services.Implementation
         public async Task<IEnumerable<VoucherDto>> GetAllVouchersAsync()
         {
             var vouchers = await _context.Vouchers.ToListAsync();
+            await DeactivateUsedUpVouchersAsync(vouchers);
             return vouchers.Select(MapToDto);
         }
 
@@ -30,6 +31,7 @@ namespace backend.Services.Implementation
             var voucher = await _context.Vouchers.FindAsync(id);
             if (voucher == null) return null;
 
+            await DeactivateUsedUpVouchersAsync(new[] { voucher });
             return MapToDto(voucher);
         }
 
@@ -85,6 +87,10 @@ namespace backend.Services.Implementation
             voucher.StartDate = voucherDto.StartDate;
             voucher.EndDate = voucherDto.EndDate;
             voucher.UsageLimit = voucherDto.UsageLimit;
+            if (voucher.UsedCount >= voucher.UsageLimit)
+            {
+                voucher.IsActive = false;
+            }
 
             await _context.SaveChangesAsync();
             return MapToDto(voucher);
@@ -106,9 +112,32 @@ namespace backend.Services.Implementation
             if (voucher == null) return null;
 
             voucher.IsActive = !voucher.IsActive;
+            if (voucher.UsedCount >= voucher.UsageLimit)
+            {
+                voucher.IsActive = false;
+            }
             await _context.SaveChangesAsync();
             
             return MapToDto(voucher);
+        }
+
+        private async Task DeactivateUsedUpVouchersAsync(IEnumerable<Voucher> vouchers)
+        {
+            var hasChanges = false;
+
+            foreach (var voucher in vouchers)
+            {
+                if (voucher.IsActive && voucher.UsedCount >= voucher.UsageLimit)
+                {
+                    voucher.IsActive = false;
+                    hasChanges = true;
+                }
+            }
+
+            if (hasChanges)
+            {
+                await _context.SaveChangesAsync();
+            }
         }
 
         private static VoucherDto MapToDto(Voucher voucher)
