@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
     View, 
     Text, 
@@ -6,23 +6,68 @@ import {
     SafeAreaView, 
     TouchableOpacity, 
     Image, 
-    ActivityIndicator,
-    Alert
+    ActivityIndicator
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types';
 import useAlertStore from '../../store/useAlertStore';
+import axiosClient from '../../api/axiosClient';
+import { markVoucherAsUsed } from './voucherUsageStorage';
 
 export default function PaymentScreen() {
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
     const route = useRoute<any>();
 
-    const { orderId, qrUrl, amount, ticketData } = route.params || {};
+    const { bookingId, qrUrl, amount, ticketData } = route.params || {};
     const [loading, setLoading] = useState(false);
     const showAlert = useAlertStore(state => state.showAlert);
+    const [isCompleted, setIsCompleted] = useState(false);
+    const isPolling = React.useRef(true);
+    const payableAmount = Math.round(Number(amount || 0));
+
+    // Polling API để kiểm tra trạng thái an toàn bằng đệ quy setTimeout
+    useEffect(() => {
+        if (!bookingId || isCompleted) return;
+
+        let isMounted = true;
+        isPolling.current = true;
+
+        const pollStatus = async () => {
+            if (!isMounted || !isPolling.current || isCompleted) return;
+
+            try {
+                const response: any = await axiosClient.get(`/Booking/${bookingId}/status`);
+                
+                if (response?.status === 'Completed') {
+                    isPolling.current = false; 
+                    setIsCompleted(true);
+                    await saveTicket();
+                    return; 
+                } else if (response?.status === 'Expired' || response?.status === 'Cancelled') {
+                    isPolling.current = false;
+                    showAlert('Thất bại', 'Đơn hàng đã hết hạn hoặc bị hủy.', { type: 'error' });
+                    navigation.goBack();
+                    return;
+                }
+            } catch (error) {
+                console.log("Polling error:", error);
+            }
+
+            // Lên lịch gọi lại sau 3s nếu vẫn đang mount và chưa hoàn thành
+            if (isMounted && isPolling.current) {
+                setTimeout(pollStatus, 3000);
+            }
+        };
+
+        pollStatus();
+
+        return () => {
+            isMounted = false;
+            isPolling.current = false;
+        };
+    }, [bookingId, isCompleted]);
 
     const handleBack = () => {
         showAlert(
@@ -54,14 +99,15 @@ export default function PaymentScreen() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    orderId: orderId,
-                    amount: amount
+                    bookingId: bookingId,
+                    amount: payableAmount
                 })
             });
 
             if (response.ok) {
-                // Thanh toán xong -> Lưu vé
-                await saveTicket();
+                // Không cần làm gì ở đây, polling sẽ tự động catch 'Completed' 
+                // và gọi saveTicket. Chỉ show alert hoặc chờ
+                console.log("Mock Payment Sent");
             } else {
                 showAlert('Lỗi', 'Không thể giả lập thanh toán lúc này.', { type: 'error' });
                 setLoading(false);
@@ -86,6 +132,8 @@ export default function PaymentScreen() {
                 seats: ticketData?.selectedSeats || [],
                 seatTotal: ticketData?.seatTotal,
                 foodTotal: ticketData?.foodTotal,
+                voucher: ticketData?.voucher || null,
+                voucherDiscount: ticketData?.voucherDiscount || 0,
                 finalTotal: ticketData?.finalTotal,
                 foods: ticketData?.foods || [],
                 paymentMethod: "QR Code",
@@ -102,6 +150,8 @@ export default function PaymentScreen() {
                 "MY_TICKETS",
                 JSON.stringify(updatedTickets)
             );
+
+            await markVoucherAsUsed(ticketData?.voucher?.code);
 
             showAlert("Thành công", "Thanh toán thành công và vé đã được lưu.", {
                 type: 'success',
@@ -132,12 +182,9 @@ export default function PaymentScreen() {
             {/* Main Content */}
             <View style={styles.content}>
                 <View style={styles.card}>
-                    <Text style={styles.label}>Mã đơn hàng:</Text>
-                    <Text style={styles.orderId}>{orderId || 'N/A'}</Text>
-                    
                     <Text style={styles.label}>Số tiền cần trả:</Text>
                     <Text style={styles.amount}>
-                        {amount ? amount.toLocaleString('vi-VN') : '0'} đ
+                        {payableAmount.toLocaleString('vi-VN')} đ
                     </Text>
 
                     {qrUrl ? (
@@ -161,12 +208,14 @@ export default function PaymentScreen() {
                     <TouchableOpacity 
                         style={styles.demoButton} 
                         onPress={handleMockPayment}
-                        disabled={loading}
+                        disabled={loading || isCompleted}
                     >
                         {loading ? (
                             <ActivityIndicator color="#fff" />
                         ) : (
-                            <Text style={styles.demoButtonText}>Chờ thanh toán .....</Text>
+                            <Text style={styles.demoButtonText}>
+                                {isCompleted ? "Đã thanh toán" : "Giả lập KH đã quét QR"}
+                            </Text>
                         )}
                     </TouchableOpacity>
                 </View>

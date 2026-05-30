@@ -13,7 +13,10 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ReactNativeZoomableView } from '@openspacelabs/react-native-zoomable-view';
+import * as signalR from "@microsoft/signalr";
 import AppSideMenu from "../../components/AppSideMenu";
+import showtimeService from "../../services/showtimeService";
+import useAlertStore from "../../store/useAlertStore";
 
 export default function SeatSelectionScreen({ navigation, route }: any) {
     const cinemaName = route.params?.cinemaName || "The Sun Cinema";
@@ -33,55 +36,109 @@ export default function SeatSelectionScreen({ navigation, route }: any) {
     
     const [layout, setLayout] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [bookedSeatIds, setBookedSeatIds] = useState<number[]>([]);
+    const [basePrice, setBasePrice] = useState<number>(75000);
+
+    const showAlert = useAlertStore(state => state.showAlert);
 
     React.useEffect(() => {
-        if (!cinemaId || !roomId) return;
-        setIsLoading(true);
-        import('../../services/seatService').then(module => {
-            module.default.getSeatLayout(cinemaId, roomId).then(data => {
-                setLayout(data);
-                setIsLoading(false);
-            }).catch(e => {
+        if (!cinemaId || !roomId || !showtimeId) return;
+        
+        let connection: signalR.HubConnection | null = null;
+
+        const loadData = async () => {
+            setIsLoading(true);
+            try {
+                const seatService = (await import('../../services/seatService')).default;
+                const layoutData = await seatService.getSeatLayout(cinemaId, roomId);
+                setLayout(layoutData);
+
+                const statusData = await showtimeService.getSeatStatus(showtimeId);
+                setBookedSeatIds(statusData);
+
+                const showtimeData = await showtimeService.getShowtimeById(showtimeId);
+                setBasePrice(showtimeData.basePrice);
+
+                const baseUrl = process.env.EXPO_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5126';
+                connection = new signalR.HubConnectionBuilder()
+                    .withUrl(`${baseUrl}/seathub`)
+                    .withAutomaticReconnect()
+                    .build();
+
+                await connection.start();
+                await connection.invoke("JoinShowtimeGroup", showtimeId.toString());
+
+                connection.on("SeatLocked", async () => {
+                    const updatedStatus = await showtimeService.getSeatStatus(showtimeId);
+                    setBookedSeatIds(updatedStatus);
+                    setSelectedSeats(prev => prev.filter(s => !updatedStatus.includes(s.id)));
+                });
+            } catch (e) {
                 console.log(e);
+            } finally {
                 setIsLoading(false);
-            });
-        });
-    }, [cinemaId, roomId]);
+            }
+        };
 
-    /* MOCK DATA
-    const rows = ["A", "B", "C", "D", "E", "F", "G", "H", "J", "L", "M", "N", "P"];
-    const cols = [12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
+        loadData();
 
-    const bookedSeats = ["A12", "A11", "B10", "C8", "D6", "E5", "F4"];
-    const vipRows = ["D", "E", "F", "G", "H", "J", "L", "M"];
-    const sweetBoxRows = ["N", "P"];
-    */
-    const bookedSeats = ["A12", "A11", "B10", "C8", "D6", "E5", "F4"];
+        return () => {
+            if (connection) {
+                connection.invoke("LeaveShowtimeGroup", showtimeId.toString()).then(() => {
+                    connection?.stop();
+                }).catch(err => console.log(err));
+            }
+        };
+    }, [cinemaId, roomId, showtimeId]);
 
-    const normalPrice = 75000;
-    const vipPrice = 95000;
-    const sweetBoxPrice = 120000;
+    const normalPrice = basePrice;
+    const vipPrice = basePrice + 20000;
+    const sweetBoxPrice = vipPrice * 2 + 20000;
 
     const getSeatPrice = (seatType: string) => {
         if (seatType === 'Couple') return sweetBoxPrice;
         if (seatType === 'VIP') return vipPrice;
         return normalPrice;
     };
-
-    const toggleSeat = (seat: any) => {
-        const seatName = `${seat.rowName}${seat.seatNumber}`;
-        if (bookedSeats.includes(seatName)) return;
-
-        if (selectedSeats.find(s => s.id === seat.id)) {
-            setSelectedSeats(selectedSeats.filter((s) => s.id !== seat.id));
-        } else {
-            setSelectedSeats([...selectedSeats, seat]);
+//Check ghế đơn lẻ
+    const checkOrphans = (seats: any[], occupiedIds: number[]) => {
+        let orphanCount = 0;
+        for (let i = 0; i < seats.length; i++) {
+            const s = seats[i];
+            if (occupiedIds.includes(s.id)) continue;
+            
+            const prevS = seats[i-1];
+            const nextS = seats[i+1];
+            
+            const leftBlocked = !prevS || occupiedIds.includes(prevS.id) || (s.columnIndex - prevS.columnIndex > 1);
+            const rightBlocked = !nextS || occupiedIds.includes(nextS.id) || (nextS.columnIndex - s.columnIndex > 1);
+            
+            if (leftBlocked && rightBlocked) {
+                orphanCount++;
+            }
         }
+        return orphanCount;
+    }
+// Chặn đặt quá nhiều vé 
+    const toggleSeat = (seat: any) => {
+        if (bookedSeatIds.includes(seat.id)) return;
+
+        const isSelecting = !selectedSeats.find(s => s.id === seat.id);
+
+        if (isSelecting && selectedSeats.length >= 8) {
+            showAlert("Thông báo", "Bạn chỉ được chọn tối đa 8 vé cho mỗi giao dịch.", { type: "warning" });
+            return;
+        }
+
+        const newSelectedSeats = isSelecting 
+            ? [...selectedSeats, seat]
+            : selectedSeats.filter((s) => s.id !== seat.id);
+        
+        setSelectedSeats(newSelectedSeats);
     };
 
     const getSeatStyle = (seat: any) => {
-        const seatName = `${seat.rowName}${seat.seatNumber}`;
-        if (bookedSeats.includes(seatName)) return styles.bookedSeat;
+        if (bookedSeatIds.includes(seat.id)) return styles.bookedSeat;
         if (selectedSeats.find(s => s.id === seat.id)) return styles.selectedSeat;
         
         if (seat.type === 'Couple') return styles.sweetSeat;
@@ -90,28 +147,123 @@ export default function SeatSelectionScreen({ navigation, route }: any) {
         return styles.normalSeat;
     };
 
-    const isAgeRestricted = () => {
-        const movieAge = String(age || "").toUpperCase();
+    // Trả về số tuổi giới hạn (13, 16, 18), hoặc null nếu không hạn chế
+    const getAgeLimit = (): number | null => {
+        const movieAge = String(age || "").trim().toUpperCase();
+        if (movieAge === "T18") return 18;
+        if (movieAge === "T16") return 16;
+        if (movieAge === "T13") return 13;
+        return null; // P, K, rỗng → không yêu cầu xác nhận tuổi nghiêm ngặt
+    };
 
+    // Nội dung xác nhận phù hợp với từng mức phân loại
+    const getConfirmMessage = () => {
+        const limit = getAgeLimit();
+
+        if (limit === 18) {
+            return (
+                <Text style={styles.confirmContent}>
+                    Tôi xác nhận mua vé cho người xem từ đủ{" "}
+                    <Text style={{ fontWeight: "900" }}>18 tuổi</Text>{" "}
+                    trở lên và đồng ý cung cấp giấy tờ tùy thân để xác thực độ tuổi
+                    người xem. The Sun Cinema sẽ không hoàn tiền nếu người xem
+                    không đáp ứng đủ điều kiện.{" "}
+                    <Text
+                        style={styles.linkText}
+                        onPress={() => Linking.openURL("https://bvhttdl.gov.vn/")}
+                    >
+                        Tham khảo quy định
+                    </Text>{" "}
+                    của Bộ Văn Hóa, Thể Thao và Du Lịch.
+                </Text>
+            );
+        }
+
+        if (limit === 16) {
+            return (
+                <Text style={styles.confirmContent}>
+                    Tôi xác nhận mua vé cho người xem từ đủ{" "}
+                    <Text style={{ fontWeight: "900" }}>16 tuổi</Text>{" "}
+                    trở lên và đồng ý cung cấp giấy tờ tùy thân nếu được yêu cầu.
+                    The Sun Cinema sẽ không hoàn tiền nếu người xem không đáp ứng
+                    đủ điều kiện.{" "}
+                    <Text
+                        style={styles.linkText}
+                        onPress={() => Linking.openURL("https://bvhttdl.gov.vn/")}
+                    >
+                        Tham khảo quy định
+                    </Text>{" "}
+                    của Bộ Văn Hóa, Thể Thao và Du Lịch.
+                </Text>
+            );
+        }
+
+        if (limit === 13) {
+            return (
+                <Text style={styles.confirmContent}>
+                    Tôi xác nhận mua vé cho người xem từ đủ{" "}
+                    <Text style={{ fontWeight: "900" }}>13 tuổi</Text>{" "}
+                    trở lên. The Sun Cinema sẽ không hoàn tiền nếu người xem
+                    không đáp ứng đủ điều kiện.{" "}
+                    <Text
+                        style={styles.linkText}
+                        onPress={() => Linking.openURL("https://bvhttdl.gov.vn/")}
+                    >
+                        Tham khảo quy định
+                    </Text>{" "}
+                    của Bộ Văn Hóa, Thể Thao và Du Lịch.
+                </Text>
+            );
+        }
+
+        // P hoặc không xác định → mọi độ tuổi
         return (
-            movieAge.includes("T13") ||
-            movieAge.includes("T16") ||
-            movieAge.includes("T18") ||
-            movieAge.includes("C13") ||
-            movieAge.includes("C16") ||
-            movieAge.includes("C18") ||
-            movieAge.includes("13") ||
-            movieAge.includes("16") ||
-            movieAge.includes("18")
+            <Text style={styles.confirmContent}>
+                Phim dành cho mọi độ tuổi. Tôi xác nhận The Sun Cinema không
+                được phép phục vụ khách hàng dưới 13 tuổi cho các suất chiếu
+                kết thúc từ 22:00 và dưới 16 tuổi cho các suất chiếu kết thúc
+                từ 23:00. Tôi đồng ý cung cấp giấy tờ tùy thân để xác thực
+                độ tuổi người xem. The Sun Cinema sẽ không hoàn tiền nếu người
+                xem không đáp ứng đủ điều kiện.{" "}
+                <Text
+                    style={styles.linkText}
+                    onPress={() => Linking.openURL("https://bvhttdl.gov.vn/")}
+                >
+                    Tham khảo quy định
+                </Text>{" "}
+                của Bộ Văn Hóa, Thể Thao và Du Lịch.
+            </Text>
         );
     };
 
     const totalPrice = selectedSeats.reduce((sum, seat) => {
         return sum + getSeatPrice(seat.type);
     }, 0);
-
+// Kiểm tra vé đơn lẻ
     const handleOpenConfirm = () => {
         if (selectedSeats.length === 0) return;
+
+        // Check Orphan Seat Rule across the whole layout before allowing to proceed
+        if (layout && layout.seats) {
+            const rows = Array.from(new Set(layout.seats.map((s: any) => s.rowName)));
+            
+            for (const rowName of rows) {
+                const seatsInRow = layout.seats
+                    .filter((s: any) => s.rowName === rowName)
+                    .sort((a: any, b: any) => a.columnIndex - b.columnIndex);
+                    
+                const baselineOccupied = [...bookedSeatIds];
+                const currentOccupied = [...bookedSeatIds, ...selectedSeats.map(s => s.id)];
+                
+                const baselineOrphans = checkOrphans(seatsInRow, baselineOccupied);
+                const currentOrphans = checkOrphans(seatsInRow, currentOccupied);
+                
+                if (currentOrphans > baselineOrphans) {
+                    showAlert("Thông báo", "Vui lòng không để trống 1 ghế ở đầu hàng hoặc giữa các ghế đã chọn.", { type: "warning" });
+                    return;
+                }
+            }
+        }
 
         setShowConfirmModal(true);
     };
@@ -131,6 +283,7 @@ export default function SeatSelectionScreen({ navigation, route }: any) {
             time,
             date,
             selectedSeats: selectedSeats.map(s => `${s.rowName}${s.seatNumber}`),
+            selectedSeatIds: selectedSeats.map(s => s.id),
             totalPrice,
             cinemaId,
             roomId,
@@ -211,8 +364,7 @@ export default function SeatSelectionScreen({ navigation, route }: any) {
                                                     if (!seat) {
                                                         renderedRow.push(<View key={colIdx} style={styles.emptySeat} />);
                                                     } else {
-                                                        const seatName = `${seat.rowName}${seat.seatNumber}`;
-                                                        const isBooked = bookedSeats.includes(seatName);
+                                                        const isBooked = bookedSeatIds.includes(seat.id);
 
                                                         if (seat.type === 'Couple') skipNext = true;
                                                         renderedRow.push(
@@ -331,37 +483,7 @@ export default function SeatSelectionScreen({ navigation, route }: any) {
                     <View style={styles.confirmBox}>
                         <Text style={styles.confirmTitle}>Xác nhận</Text>
 
-                        {isAgeRestricted() ? (
-                            <Text style={styles.confirmContent}>
-                                Tôi xác nhận mua vé cho người xem từ đủ 18 tuổi trở lên
-                                và đồng ý cung cấp giấy tờ tùy thân để xác thực độ tuổi
-                                người xem. The Sun Cinema sẽ không hoàn tiền nếu người xem
-                                không đáp ứng đủ điều kiện.{" "}
-                                <Text
-                                    style={styles.linkText}
-                                    onPress={() => Linking.openURL("https://bvhttdl.gov.vn/")}
-                                >
-                                    Tham khảo quy định
-                                </Text>{" "}
-                                của Bộ Văn Hóa, Thể Thao và Du Lịch.
-                            </Text>
-                        ) : (
-                            <Text style={styles.confirmContent}>
-                                Phim dành cho mọi độ tuổi. Tôi xác nhận The Sun Cinema
-                                không được phép phục vụ khách hàng dưới 13 tuổi cho các
-                                suất chiếu kết thúc từ 22:00 và dưới 16 tuổi cho các suất
-                                chiếu kết thúc từ 23:00. Tôi đồng ý cung cấp giấy tờ tùy
-                                thân để xác thực độ tuổi người xem. The Sun Cinema sẽ không
-                                hoàn tiền nếu người xem không đáp ứng đủ điều kiện. Tham khảo{" "}
-                                <Text
-                                    style={styles.linkText}
-                                    onPress={() => Linking.openURL("https://bvhttdl.gov.vn/")}
-                                >
-                                    quy định
-                                </Text>{" "}
-                                của Bộ Văn Hóa, Thể Thao và Du Lịch.
-                            </Text>
-                        )}
+                        {getConfirmMessage()}
 
                         <View style={styles.confirmActions}>
                             <Pressable

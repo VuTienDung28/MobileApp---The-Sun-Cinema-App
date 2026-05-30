@@ -20,17 +20,17 @@ namespace backend.Services.Implements
             _httpClient = httpClient;
         }
 
-        public async Task<string> CreateOrderAndGetQrAsync(string orderId, long amount)
+        public async Task<string> CreateOrderAndGetQrAsync(string bookingId, long amount)
         {
             // 1. Tạo request có chữ ký (để gửi cho Gateway)
-            string rawData = $"orderId={orderId}&amount={amount}";
+            string rawData = $"bookingId={bookingId}&amount={amount}";
             string signature = backend.Utils.PaymentSecurity.GenerateHmacSha256(rawData, _secretKey);
             
             var paymentRequest = new PaymentRequest
             {
-                OrderId = orderId,
+                BookingId = bookingId,
                 Amount = amount,
-                OrderInfo = "Thanh toan don hang " + orderId,
+                OrderInfo = "Thanh toan don hang " + bookingId,
                 Signature = signature
                 // Bổ sung thêm trường PartnerCode vào Dto nếu cần, hiện tại giữ nguyên Dto
             };

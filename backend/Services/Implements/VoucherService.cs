@@ -29,6 +29,7 @@ namespace backend.Services.Implements
             var voucher = await _voucherRepository.GetByIdAsync(id);
             if (voucher == null) return null;
 
+            await DeactivateUsedUpVouchersAsync(new[] { voucher });
             return MapToDto(voucher);
         }
 
@@ -80,6 +81,10 @@ namespace backend.Services.Implements
             voucher.StartDate = voucherDto.StartDate;
             voucher.EndDate = voucherDto.EndDate;
             voucher.UsageLimit = voucherDto.UsageLimit;
+            if (voucher.UsedCount >= voucher.UsageLimit)
+            {
+                voucher.IsActive = false;
+            }
 
             await _voucherRepository.UpdateAsync(voucher);
             return MapToDto(voucher);
@@ -103,6 +108,25 @@ namespace backend.Services.Implements
             await _voucherRepository.UpdateAsync(voucher);
             
             return MapToDto(voucher);
+        }
+
+        private async Task DeactivateUsedUpVouchersAsync(IEnumerable<Voucher> vouchers)
+        {
+            var hasChanges = false;
+
+            foreach (var voucher in vouchers)
+            {
+                if (voucher.IsActive && voucher.UsedCount >= voucher.UsageLimit)
+                {
+                    voucher.IsActive = false;
+                    hasChanges = true;
+                }
+            }
+
+            if (hasChanges)
+            {
+                await _context.SaveChangesAsync();
+            }
         }
 
         private static VoucherDto MapToDto(Voucher voucher)

@@ -145,5 +145,20 @@ namespace backend.Repositories.Implements
                     t.Booking.ShowtimeId == showtimeId &&
                     t.Booking.Status != "Cancelled");
         }
+
+        // =============================================
+        // GET BOOKED AND PENDING SEAT IDS
+        // Lấy danh sách ID các ghế đã được mua hoặc đang được giữ (Pending < 10 phút)
+        // =============================================
+        public async Task<IEnumerable<int>> GetBookedAndPendingSeatIdsAsync(int showtimeId)
+        {
+            var tenMinsAgo = DateTime.UtcNow.AddMinutes(-10);
+            return await _db.Tickets
+                .Where(t => t.Booking.ShowtimeId == showtimeId && t.SeatId.HasValue &&
+                            (t.Booking.Status == "Completed" || 
+                            (t.Booking.Status == "Pending" && t.Booking.BookingTime > tenMinsAgo)))
+                .Select(t => t.SeatId.Value)
+                .ToListAsync();
+        }
     }
 }

@@ -14,6 +14,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import * as Location from 'expo-location';
+import MapWrapper from '../../components/MapWrapper';
 import { RootStackParamList } from '../../types';
 import useAlertStore from '../../store/useAlertStore';
 import theaterService from '../../services/theaterService';
@@ -24,8 +26,40 @@ const AddTheaterScreen: React.FC<Props> = ({ navigation }) => {
   // Thông tin cơ bản
   const [theaterName, setTheaterName] = useState('');
   const [address, setAddress] = useState('');
+  const [latitude, setLatitude] = useState<string>('');
+  const [longitude, setLongitude] = useState<string>('');
+  const [mapRegion, setMapRegion] = useState({
+    latitude: 21.028511, // Default Hanoi
+    longitude: 105.804817,
+    latitudeDelta: 0.0922,
+    longitudeDelta: 0.0421,
+  });
   
   const [isLoading, setIsLoading] = useState(false);
+
+  // Hàm lấy vị trí hiện tại
+  const handleGetCurrentLocation = async () => {
+    try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Lỗi', 'Không có quyền truy cập vị trí');
+        return;
+      }
+      const location = await Location.getCurrentPositionAsync({});
+      const lat = location.coords.latitude;
+      const lon = location.coords.longitude;
+      setLatitude(lat.toString());
+      setLongitude(lon.toString());
+      setMapRegion({
+        ...mapRegion,
+        latitude: lat,
+        longitude: lon,
+      });
+    } catch (error) {
+      console.log(error);
+      Alert.alert('Lỗi', 'Không thể lấy vị trí hiện tại');
+    }
+  };
 
   // Hàm xử lý thêm rạp
   const handleAddTheater = async () => {
@@ -47,6 +81,8 @@ const AddTheaterScreen: React.FC<Props> = ({ navigation }) => {
       await theaterService.createTheater({
         name: theaterName,
         address: address,
+        latitude: parseFloat(latitude) || 0,
+        longitude: parseFloat(longitude) || 0,
       });
       
       useAlertStore.getState().showAlert(
@@ -119,6 +155,52 @@ const AddTheaterScreen: React.FC<Props> = ({ navigation }) => {
               onChangeText={setAddress}
               multiline
             />
+          </View>
+
+          {/* Bản đồ chọn vị trí */}
+          <View style={styles.mapSection}>
+            <View style={styles.mapHeader}>
+              <Text style={styles.sectionTitle}>Vị trí trên bản đồ</Text>
+              <TouchableOpacity style={styles.locationBtn} onPress={handleGetCurrentLocation}>
+                <Ionicons name="locate" size={18} color="#FFF" />
+                <Text style={styles.locationBtnText}>Vị trí của tôi</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.mapContainer}>
+              <MapWrapper
+                style={styles.map}
+                region={mapRegion}
+                latitude={latitude ? parseFloat(latitude) : undefined}
+                longitude={longitude ? parseFloat(longitude) : undefined}
+                onPress={(e: any) => {
+                  const { latitude, longitude } = e.nativeEvent.coordinate;
+                  setLatitude(latitude.toString());
+                  setLongitude(longitude.toString());
+                }}
+              />
+            </View>
+
+            <View style={styles.rowContainer}>
+              <View style={[styles.inputWrapper, styles.halfInput]}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Vĩ độ (Latitude)"
+                  value={latitude}
+                  onChangeText={setLatitude}
+                  keyboardType="numeric"
+                />
+              </View>
+              <View style={[styles.inputWrapper, styles.halfInput]}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Kinh độ (Longitude)"
+                  value={longitude}
+                  onChangeText={setLongitude}
+                  keyboardType="numeric"
+                />
+              </View>
+            </View>
           </View>
 
           <TouchableOpacity 
@@ -263,6 +345,39 @@ const styles = StyleSheet.create({
     color: '#1A1A2E',
     fontSize: 16,
     fontWeight: '700',
+  },
+  mapSection: {
+    marginTop: 8,
+  },
+  mapHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  locationBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#8A7851',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 4,
+  },
+  locationBtnText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  mapContainer: {
+    height: 200,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#FFE5B4',
+  },
+  map: {
+    ...StyleSheet.absoluteFillObject,
   },
 });
 

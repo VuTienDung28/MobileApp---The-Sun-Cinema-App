@@ -21,6 +21,10 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpClient();
 
+// ===== Caching & SignalR =====
+builder.Services.AddMemoryCache();
+builder.Services.AddSignalR();
+
 // ===== Database Configuration =====
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -106,6 +110,8 @@ builder.Services.AddScoped<ISeatRepository, SeatRepository>();
 builder.Services.AddScoped<ISeatService, SeatService>();
 builder.Services.AddScoped<IShowtimeRepository, ShowtimeRepository>();
 builder.Services.AddScoped<IShowtimeService, ShowtimeService>();
+builder.Services.AddScoped<IBookingRepository, BookingRepository>();
+builder.Services.AddScoped<IBookingService, BookingService>();
 
 builder.Services.AddScoped<IVoucherRepository, VoucherRepository>();
 builder.Services.AddScoped<IVoucherService, VoucherService>();
@@ -211,5 +217,6 @@ app.UseAuthentication(); // QUAN TRỌNG: Phải trước UseAuthorization
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<backend.Hubs.SeatHub>("/seathub");
 
 app.Run();

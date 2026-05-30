@@ -13,6 +13,8 @@ namespace backend.DTOs
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Address { get; set; } = string.Empty;
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
     }
 
     public class CinemaDetailDto
@@ -20,6 +22,8 @@ namespace backend.DTOs
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Address { get; set; } = string.Empty;
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
         public ICollection<RoomInCinemaDto> Rooms { get; set; } = new List<RoomInCinemaDto>();
     }
 
@@ -41,12 +45,17 @@ namespace backend.DTOs
 
         [Required(ErrorMessage = "Địa chỉ rạp chiếu phim không được để trống")]
         public string Address { get; set; } = string.Empty;
+        
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
     }
 
     public class UpdateCinemaDto
     {
         public string? Name { get; set; }
         public string? Address { get; set; }
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
     }
 
     // =============================================
