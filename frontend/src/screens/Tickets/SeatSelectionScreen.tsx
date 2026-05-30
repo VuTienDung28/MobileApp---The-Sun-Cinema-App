@@ -147,6 +147,14 @@ export default function SeatSelectionScreen({ navigation, route }: any) {
         return styles.normalSeat;
     };
 
+    const getSeatDisplayName = (seat: any) => {
+        if (!seat) return "";
+        if (seat.type === 'Couple') {
+            return `${seat.rowName}${seat.seatNumber * 2 - 1}  ${seat.rowName}${seat.seatNumber * 2}`;
+        }
+        return `${seat.rowName}${seat.seatNumber}`;
+    };
+
     // Trả về số tuổi giới hạn (13, 16, 18), hoặc null nếu không hạn chế
     const getAgeLimit = (): number | null => {
         const movieAge = String(age || "").trim().toUpperCase();
@@ -282,7 +290,7 @@ export default function SeatSelectionScreen({ navigation, route }: any) {
             type,
             time,
             date,
-            selectedSeats: selectedSeats.map(s => `${s.rowName}${s.seatNumber}`),
+            selectedSeats: selectedSeats.map(s => getSeatDisplayName(s)),
             selectedSeatIds: selectedSeats.map(s => s.id),
             totalPrice,
             cinemaId,
@@ -384,7 +392,7 @@ export default function SeatSelectionScreen({ navigation, route }: any) {
                                                                         <View style={styles.crossLine2} />
                                                                     </>
                                                                 )}
-                                                                <Text style={styles.seatText}>{seat.seatNumber}</Text>
+                                                                <Text style={styles.seatText}>{getSeatDisplayName(seat)}</Text>
                                                             </TouchableOpacity>
                                                         );
                                                     }
@@ -456,7 +464,7 @@ export default function SeatSelectionScreen({ navigation, route }: any) {
 
                     <Text style={styles.seatCountText}>
                         {selectedSeats.length > 0
-                            ? `${selectedSeats.length} ghế: ${selectedSeats.map(s => `${s.rowName}${s.seatNumber}`).join(", ")}`
+                            ? `${selectedSeats.length} ghế: ${selectedSeats.map(s => getSeatDisplayName(s)).join(", ")}`
                             : "Chưa chọn ghế"}
                     </Text>
                 </View>

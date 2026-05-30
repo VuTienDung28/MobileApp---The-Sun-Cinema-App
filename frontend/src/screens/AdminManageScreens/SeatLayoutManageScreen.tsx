@@ -11,6 +11,7 @@ import {
   Modal,
   PanResponder,
   GestureResponderEvent,
+  Dimensions,
 } from 'react-native';
 import { ReactNativeZoomableView } from '@openspacelabs/react-native-zoomable-view';
 import { Ionicons } from '@expo/vector-icons';
@@ -495,6 +496,18 @@ const SeatLayoutManageScreen: React.FC<Props> = ({ navigation, route }) => {
                  <Ionicons name="text" size={16} color={activeTool === 'EditRowName' ? '#1A1A2E' : '#BDBDBD'} />
                  <Text style={[styles.toolBtnText, activeTool === 'EditRowName' && styles.toolBtnTextActive]}>Đổi Tên Hàng</Text>
                </TouchableOpacity>
+
+               <View style={styles.toolbarDivider} />
+
+               <TouchableOpacity 
+                 style={[styles.toolBtn, isNumberingFromRight && styles.toolBtnActive]} 
+                 onPress={() => setIsNumberingFromRight(!isNumberingFromRight)}
+               >
+                 <Ionicons name="swap-horizontal" size={16} color={isNumberingFromRight ? '#1A1A2E' : '#BDBDBD'} />
+                 <Text style={[styles.toolBtnText, isNumberingFromRight && styles.toolBtnTextActive]}>
+                   {isNumberingFromRight ? 'Phải -> Trái' : 'Trái -> Phải'}
+                 </Text>
+               </TouchableOpacity>
              </ScrollView>
           </View>
 
@@ -549,19 +562,48 @@ const SeatLayoutManageScreen: React.FC<Props> = ({ navigation, route }) => {
                               const isAisle = aisleCols.has(c);
                               const isHidden = rc.hiddenCols.has(c);
                               
+                              let seatDisplay = "";
                               let isCoupleLeft = false;
                               let isCoupleRight = false;
 
-                              if (!isAisle && !isHidden && rc.type === 'Couple') {
+                              if (!isAisle && !isHidden) {
                                  const validIndex = validCellsInRow.indexOf(c);
-                                 if (validIndex % 2 === 0) {
-                                    if (validIndex + 1 < validCellsInRow.length && validCellsInRow[validIndex + 1] === c + 1) {
-                                       isCoupleLeft = true;
+                                 
+                                 if (rc.type === 'Couple') {
+                                    if (validIndex % 2 === 0) {
+                                       if (validIndex + 1 < validCellsInRow.length && validCellsInRow[validIndex + 1] === c + 1) {
+                                          isCoupleLeft = true;
+                                       }
+                                    } else {
+                                       if (validCellsInRow[validIndex - 1] === c - 1) {
+                                          isCoupleRight = true;
+                                       }
+                                    }
+
+                                    // Calc couple display name
+                                    if (isCoupleLeft || isCoupleRight) {
+                                        let coupleGroupIndex = Math.floor(validIndex / 2);
+                                        let totalCoupleGroups = Math.floor(validCellsInRow.length / 2);
+                                        let seatNum = isNumberingFromRight ? (totalCoupleGroups - coupleGroupIndex) : (coupleGroupIndex + 1);
+                                        
+                                        if (isCoupleLeft) {
+                                            seatDisplay = `${rc.name}${seatNum * 2 - 1}`;
+                                        } else {
+                                            seatDisplay = `${rc.name}${seatNum * 2}`;
+                                        }
+                                        
+                                        // If numbering from right, the physical left square gets the higher number (the right-side number)
+                                        if (isNumberingFromRight) {
+                                            if (isCoupleLeft) {
+                                                seatDisplay = `${rc.name}${seatNum * 2}`;
+                                            } else {
+                                                seatDisplay = `${rc.name}${seatNum * 2 - 1}`;
+                                            }
+                                        }
                                     }
                                  } else {
-                                    if (validCellsInRow[validIndex - 1] === c - 1) {
-                                       isCoupleRight = true;
-                                    }
+                                     let seatNum = isNumberingFromRight ? (validCellsInRow.length - validIndex) : (validIndex + 1);
+                                     seatDisplay = `${rc.name}${seatNum}`;
                                  }
                               }
                               
@@ -587,11 +629,22 @@ const SeatLayoutManageScreen: React.FC<Props> = ({ navigation, route }) => {
                                   style={[styles.builderCell, cellStyle]}
                                 >
                                   {!isAisle && !isHidden && !isCoupleLeft && !isCoupleRight && (
-                                    <Ionicons name="scan-outline" size={12} color="rgba(255,255,255,0.2)" />
+                                    <Text style={{ fontSize: 9, fontWeight: 'bold', color: 'rgba(0,0,0,0.6)' }} adjustsFontSizeToFit numberOfLines={1}>
+                                      {seatDisplay}
+                                    </Text>
                                   )}
                                   {isCoupleLeft && (
-                                    <View style={{ position: 'absolute', right: -7, zIndex: 10 }}>
-                                      <Ionicons name="heart" size={14} color="rgba(255,255,255,0.6)" />
+                                    <View style={{ width: '100%', alignItems: 'flex-end', paddingRight: 2 }}>
+                                      <Text style={{ fontSize: 9, fontWeight: 'bold', color: 'rgba(255,255,255,0.9)' }} adjustsFontSizeToFit numberOfLines={1}>
+                                        {seatDisplay}
+                                      </Text>
+                                    </View>
+                                  )}
+                                  {isCoupleRight && (
+                                    <View style={{ width: '100%', alignItems: 'flex-start', paddingLeft: 2 }}>
+                                      <Text style={{ fontSize: 9, fontWeight: 'bold', color: 'rgba(255,255,255,0.9)' }} adjustsFontSizeToFit numberOfLines={1}>
+                                        {seatDisplay}
+                                      </Text>
                                     </View>
                                   )}
                                 </TouchableOpacity>
@@ -614,6 +667,19 @@ const SeatLayoutManageScreen: React.FC<Props> = ({ navigation, route }) => {
   // ==========================================
   // RENDER MAIN SCREEN
   // ==========================================
+  const getSeatDisplayName = (seat: SeatDto) => {
+    if (!seat) return "";
+    if (seat.type === 'Couple') {
+      return `${seat.rowName}${seat.seatNumber * 2 - 1}  ${seat.rowName}${seat.seatNumber * 2}`;
+    }
+    return `${seat.rowName}${seat.seatNumber}`;
+  };
+
+  const numRows = layout ? Array.from(new Set(layout.seats.map(s => s.rowName))).length : 10;
+  const numCols = layout?.totalColumns || 10;
+  const contentWidth = numCols * 36 + 60;
+  const contentHeight = numRows * 38 + 120; // Screen box + Seats
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -636,45 +702,60 @@ const SeatLayoutManageScreen: React.FC<Props> = ({ navigation, route }) => {
           </View>
         ) : (
           <View style={styles.layoutContainer}>
-            <View style={styles.screenIndicator}>
-              <Text style={styles.screenText}>MÀN HÌNH</Text>
-            </View>
-
-            <View style={styles.seatGrid}>
-              {Array.from(new Set(layout.seats.map(s => s.rowName))).map((rowName) => (
-                <View key={rowName} style={styles.seatRow}>
-                  <Text style={styles.rowLabel}>{rowName}</Text>
-                  <View style={styles.rowSeats}>
-                    {(() => {
-                      const renderedRow = [];
-                      let skipNext = false;
-                      for (let colIdx = 0; colIdx < layout.totalColumns; colIdx++) {
-                        if (skipNext) {
-                          skipNext = false;
-                          continue;
-                        }
-                        const seat = layout.seats.find(s => s.rowName === rowName && s.columnIndex === colIdx + 1);
-                        if (!seat) {
-                          renderedRow.push(<View key={colIdx} style={styles.emptySeat} />);
-                        } else {
-                          if (seat.type === 'Couple') skipNext = true; 
-                          renderedRow.push(
-                            <View key={colIdx} style={[
-                              styles.seat, 
-                              seat.type === 'VIP' ? styles.seatVIP : styles.seatStandard,
-                              seat.type === 'Couple' ? styles.seatCoupleScreen : null
-                            ]}>
-                              <Text style={styles.seatNumber}>{seat.seatNumber}</Text>
-                            </View>
-                          );
-                        }
-                      }
-                      return renderedRow;
-                    })()}
+            <View style={{ height: 450, width: '100%', backgroundColor: 'rgba(0,0,0,0.02)', borderRadius: 12, marginBottom: 20 }}>
+              <ReactNativeZoomableView
+                maxZoom={2.5}
+                minZoom={Math.min(1, Dimensions.get('window').width / contentWidth)}
+                zoomStep={0.5}
+                initialZoom={Math.min(1, Dimensions.get('window').width / contentWidth)}
+                bindToBorders={true}
+                contentWidth={contentWidth}
+                contentHeight={contentHeight}
+                style={{ flex: 1 }}
+              >
+                <View style={{ width: contentWidth, height: contentHeight, alignItems: 'center', alignSelf: 'center', paddingTop: 20 }}>
+                  <View style={styles.screenIndicator}>
+                    <Text style={styles.screenText}>MÀN HÌNH</Text>
                   </View>
-                  <Text style={styles.rowLabel}>{rowName}</Text>
+
+                  <View style={styles.seatGrid}>
+                    {Array.from(new Set(layout.seats.map(s => s.rowName))).map((rowName) => (
+                      <View key={rowName} style={styles.seatRow}>
+                        <Text style={styles.rowLabel}>{rowName}</Text>
+                        <View style={styles.rowSeats}>
+                          {(() => {
+                            const renderedRow = [];
+                            let skipNext = false;
+                            for (let colIdx = 0; colIdx < layout.totalColumns; colIdx++) {
+                              if (skipNext) {
+                                skipNext = false;
+                                continue;
+                              }
+                              const seat = layout.seats.find(s => s.rowName === rowName && s.columnIndex === colIdx + 1);
+                              if (!seat) {
+                                renderedRow.push(<View key={colIdx} style={styles.emptySeat} />);
+                              } else {
+                                if (seat.type === 'Couple') skipNext = true; 
+                                renderedRow.push(
+                                  <View key={colIdx} style={[
+                                    styles.seat, 
+                                    seat.type === 'VIP' ? styles.seatVIP : styles.seatStandard,
+                                    seat.type === 'Couple' ? styles.seatCoupleScreen : null
+                                  ]}>
+                                    <Text style={styles.seatNumber}>{getSeatDisplayName(seat)}</Text>
+                                  </View>
+                                );
+                              }
+                            }
+                            return renderedRow;
+                          })()}
+                        </View>
+                        <Text style={styles.rowLabel}>{rowName}</Text>
+                      </View>
+                    ))}
+                  </View>
                 </View>
-              ))}
+              </ReactNativeZoomableView>
             </View>
 
             <View style={styles.mainLegendContainer}>
@@ -728,17 +809,19 @@ const styles = StyleSheet.create({
   screenIndicator: { width: '80%', height: 30, backgroundColor: '#4ECDC4', borderBottomLeftRadius: 50, borderBottomRightRadius: 50, alignItems: 'center', justifyContent: 'center', marginBottom: 40 },
   screenText: { color: '#FFF', fontWeight: 'bold', letterSpacing: 2 },
   seatGrid: { alignItems: 'center' },
-  seatRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  seatRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   rowLabel: { width: 20, textAlign: 'center', fontWeight: 'bold', color: '#8A7851' },
   rowSeats: { flexDirection: 'row', marginHorizontal: 10 },
-  seat: { width: 20, height: 20, justifyContent: 'center', alignItems: 'center', marginHorizontal: 3, borderRadius: 4 },
+  seat: { width: 30, height: 30, justifyContent: 'center', alignItems: 'center', marginHorizontal: 3, borderRadius: 4, borderWidth: 1, borderColor: "rgba(0,0,0,0.1)", overflow: "hidden" },
   seatStandard: { backgroundColor: '#BDBDBD' },
   seatVIP: { backgroundColor: '#FFCC00' },
-  seatCoupleScreen: { width: 46, backgroundColor: '#9B59B6' },
-  emptySeat: { width: 20, height: 20, marginHorizontal: 3 },
-  seatNumber: { fontSize: 8, fontWeight: 'bold', color: '#FFF' },
-  mainLegendContainer: { flexDirection: 'row', marginTop: 30, gap: 20 },
+  seatCoupleScreen: { width: 66, backgroundColor: '#9B59B6' },
+  emptySeat: { width: 30, height: 30, marginHorizontal: 3 },
+  seatNumber: { fontSize: 9, fontWeight: 'bold', color: '#111' },
+  mainLegendContainer: { flexDirection: 'row', marginTop: 10, gap: 20 },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   mainLegendText: { fontSize: 12, color: '#8A7851', fontWeight: '600' },
+  legendBox: { width: 20, height: 20, borderRadius: 4 },
   actionButtonsRow: { flexDirection: 'row', gap: 12, marginTop: 40 },
   editBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#4ECDC4', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12, gap: 8 },
   clearBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FF6B6B', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12, gap: 8 },
