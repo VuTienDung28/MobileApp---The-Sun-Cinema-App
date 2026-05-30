@@ -113,7 +113,8 @@ builder.Services.AddScoped<IShowtimeService, ShowtimeService>();
 builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 builder.Services.AddScoped<IBookingService, BookingService>();
 
-builder.Services.AddScoped<IVoucherService, backend.Services.Implementation.VoucherService>();
+builder.Services.AddScoped<IVoucherRepository, VoucherRepository>();
+builder.Services.AddScoped<IVoucherService, VoucherService>();
 builder.Services.AddScoped<PaymentService>();
 
 // ===== Storage Configuration =====

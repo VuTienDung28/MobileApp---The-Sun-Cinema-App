@@ -8,6 +8,8 @@ import TheaterScreen from "./src/screens/Theater/TheaterScreen";
 import MainTabNavigator from "./src/navigation/MainTabNavigator";
 import LoginScreen from './src/screens/Auth/LoginScreen';
 import RegisterScreen from './src/screens/Auth/RegisterScreen';
+import ForgotPasswordScreen from './src/screens/Auth/ForgotPasswordScreen';
+import ResetPasswordScreen from './src/screens/Auth/ResetPasswordScreen';
 import AdminHomeScreen from './src/screens/Home/AdminHomeScreen';
 import UserHomeScreen from './src/screens/Home/UserHomeScreen';
 import AdminVouchersScreen from './src/screens/AdminManageScreens/AdminVouchersScreen';
@@ -68,6 +70,8 @@ export default function App() {
                 <>
                     <Stack.Screen name="Login" component={LoginScreen} />
                     <Stack.Screen name="Register" component={RegisterScreen} />
+                    <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+                    <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
                 </>
             ) : role === 'Admin' ? (
                 // Nhóm màn hình dành cho Admin

@@ -18,6 +18,17 @@ export interface RegisterRequest {
   district: string;
 }
 
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  email: string;
+  otp: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
 export interface AuthResponseData {
   token: string;
   refreshToken: string;
@@ -60,6 +71,8 @@ export interface DropdownOption {
 export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
+  ForgotPassword: undefined;
+  ResetPassword: { email: string };
 
   UserHome: undefined;
   AdminHome: undefined;
