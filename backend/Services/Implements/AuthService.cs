@@ -4,6 +4,7 @@ using backend.Models;
 using backend.Repositories.Interface;
 using backend.Services.Interface;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -17,11 +18,21 @@ namespace backend.Services.Implements
     {
         private readonly IUserRepository _userRepository;
         private readonly JwtOptions _jwtOptions;
+        private readonly IEmailService _emailService;
+        private readonly IMemoryCache _memoryCache;
+        // Prefix key để tránh xung đột với cache khác
+        private const string OtpCachePrefix = "ForgotPwd_OTP_";
 
-        public AuthService(IUserRepository userRepository, IOptions<JwtOptions> jwtOptions)
+        public AuthService(
+            IUserRepository userRepository,
+            IOptions<JwtOptions> jwtOptions,
+            IEmailService emailService,
+            IMemoryCache memoryCache)
         {
             _userRepository = userRepository;
             _jwtOptions = jwtOptions.Value;
+            _emailService = emailService;
+            _memoryCache = memoryCache;
         }
 
         public async Task<AuthResponseDto> RegisterAsync(RegisterDto registerDto)
@@ -177,6 +188,105 @@ namespace backend.Services.Implements
 
             return principal;
         }
+
+        // ==========================================
+        // QUÊN MẬT KHẨU – Bước 1: Gửi OTP qua email
+        // ==========================================
+        public async Task ForgotPasswordAsync(ForgotPasswordDto dto)
+        {
+            var user = await _userRepository.FindByEmailAsync(dto.Email);
+
+            // Luôn trả về thành công để tránh lộ thông tin tài khoản có tồn tại hay không
+            if (user == null) return;
+
+            // Tạo OTP 6 số ngẫu nhiên
+            var otp = GenerateOtp();
+
+            // Lưu OTP vào MemoryCache, hết hạn sau 10 phút
+            var cacheKey = OtpCachePrefix + dto.Email.ToLowerInvariant();
+            _memoryCache.Set(cacheKey, otp, TimeSpan.FromMinutes(10));
+
+            // Xây dựng nội dung email HTML
+            var htmlBody = BuildForgotPasswordEmail(user.FullName, otp);
+
+            await _emailService.SendEmailAsync(
+                toEmail: dto.Email,
+                toName: user.FullName,
+                subject: "[The Sun Cinema] Mã OTP đặt lại mật khẩu",
+                htmlBody: htmlBody
+            );
+        }
+
+        // ==========================================
+        // QUÊN MẬT KHẨU – Bước 2: Xác minh OTP & đặt lại mật khẩu
+        // ==========================================
+        public async Task ResetPasswordAsync(ResetPasswordDto dto)
+        {
+            var cacheKey = OtpCachePrefix + dto.Email.ToLowerInvariant();
+
+            if (!_memoryCache.TryGetValue(cacheKey, out string? cachedOtp) || cachedOtp != dto.Otp)
+            {
+                throw new UserFriendlyException("Mã OTP không hợp lệ hoặc đã hết hạn", "INVALID_OTP");
+            }
+
+            var user = await _userRepository.FindByEmailAsync(dto.Email);
+            if (user == null)
+            {
+                throw new UserFriendlyException("Tài khoản không tồn tại", "USER_NOT_FOUND");
+            }
+
+            // Dùng Identity để reset mật khẩu (tạo token nội bộ rồi dùng ngay)
+            var resetToken = await _userRepository.GeneratePasswordResetTokenAsync(user);
+            var result = await _userRepository.ResetPasswordAsync(user, resetToken, dto.NewPassword);
+
+            if (!result.Succeeded)
+            {
+                var errors = string.Join("; ", result.Errors.Select(e => e.Description));
+                throw new UserFriendlyException($"Đặt lại mật khẩu thất bại: {errors}", "RESET_FAILED");
+            }
+
+            // Xoá OTP khỏi cache sau khi dùng thành công
+            _memoryCache.Remove(cacheKey);
+        }
+
+        // ------ Helpers ------
+
+        private static string GenerateOtp()
+        {
+            using var rng = RandomNumberGenerator.Create();
+            var bytes = new byte[4];
+            rng.GetBytes(bytes);
+            // Lấy số nguyên không âm rồi mod 1_000_000 để ra 6 chữ số
+            var value = (BitConverter.ToUInt32(bytes, 0) % 1_000_000);
+            return value.ToString("D6"); // Đảm bảo luôn đủ 6 chữ số
+        }
+
+        private static string BuildForgotPasswordEmail(string fullName, string otp)
+        {
+            return $"""
+                <!DOCTYPE html>
+                <html lang="vi">
+                <head><meta charset="UTF-8"></head>
+                <body style="font-family:Arial,sans-serif;background:#f4f4f4;padding:20px">
+                  <div style="max-width:480px;margin:auto;background:#fff;border-radius:10px;
+                              padding:32px;box-shadow:0 2px 8px rgba(0,0,0,.08)">
+                    <h2 style="color:#e84118;margin-top:0">🎬 The Sun Cinema</h2>
+                    <p>Xin chào <strong>{fullName}</strong>,</p>
+                    <p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.</p>
+                    <p>Mã OTP của bạn là:</p>
+                    <div style="text-align:center;margin:24px 0">
+                      <span style="font-size:36px;font-weight:bold;letter-spacing:8px;
+                                  color:#e84118;background:#fff5f5;padding:12px 24px;
+                                  border-radius:8px;border:2px dashed #e84118">{otp}</span>
+                    </div>
+                    <p style="color:#666">⏳ Mã có hiệu lực trong <strong>10 phút</strong>.</p>
+                    <p style="color:#666">Nếu bạn không yêu cầu, hãy bỏ qua email này.</p>
+                    <hr style="border:none;border-top:1px solid #eee;margin:24px 0">
+                    <p style="font-size:12px;color:#999">© 2025 The Sun Cinema. All rights reserved.</p>
+                  </div>
+                </body>
+                </html>
+                """;
+        }
     }
 }
-
