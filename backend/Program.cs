@@ -107,7 +107,8 @@ builder.Services.AddScoped<ISeatService, SeatService>();
 builder.Services.AddScoped<IShowtimeRepository, ShowtimeRepository>();
 builder.Services.AddScoped<IShowtimeService, ShowtimeService>();
 
-builder.Services.AddScoped<IVoucherService, backend.Services.Implementation.VoucherService>();
+builder.Services.AddScoped<IVoucherRepository, VoucherRepository>();
+builder.Services.AddScoped<IVoucherService, VoucherService>();
 builder.Services.AddScoped<PaymentService>();
 
 // ===== Storage Configuration =====
