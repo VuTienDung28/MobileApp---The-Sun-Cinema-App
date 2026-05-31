@@ -112,20 +112,13 @@ namespace backend.Services.Implements
 
         private async Task DeactivateUsedUpVouchersAsync(IEnumerable<Voucher> vouchers)
         {
-            var hasChanges = false;
-
             foreach (var voucher in vouchers)
             {
                 if (voucher.IsActive && voucher.UsedCount >= voucher.UsageLimit)
                 {
                     voucher.IsActive = false;
-                    hasChanges = true;
+                    await _voucherRepository.UpdateAsync(voucher);
                 }
-            }
-
-            if (hasChanges)
-            {
-                await _context.SaveChangesAsync();
             }
         }
 
