@@ -62,7 +62,17 @@ const useAuthStore = create<AuthState>((set) => ({
     await storage.setRefreshToken(refreshToken);
     await storage.setRole(role);
     await storage.setFullName(fullName);
-    set({ token, refreshToken, role, fullName, avatarUrl: null });
+
+    // Fetch full profile to get avatarUrl right after login
+    let avatarUrl = null;
+    try {
+      const profile = await userService.getProfile();
+      avatarUrl = profile.avatarUrl ?? null;
+    } catch {
+      // Ignore if failed
+    }
+
+    set({ token, refreshToken, role, fullName, avatarUrl });
   },
 
   signOut: async () => {
