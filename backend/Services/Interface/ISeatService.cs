@@ -23,5 +23,11 @@ namespace backend.Services.Interface
         /// Từ chối nếu đã có vé được đặt.
         /// </summary>
         Task ClearSeatsAsync(int roomId);
+
+        /// <summary>
+        /// Cập nhật trạng thái của 1 ghế (Active <-> Broken)
+        /// Không bị chặn bởi vé đã đặt
+        /// </summary>
+        Task ToggleSeatStatusAsync(int roomId, int seatId);
     }
 }

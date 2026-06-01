@@ -40,6 +40,15 @@ namespace backend.Repositories.Implements
         }
 
         // =============================================
+        // UPDATE ASYNC
+        // =============================================
+        public async Task UpdateAsync(Seat seat)
+        {
+            _db.Seats.Update(seat);
+            await _db.SaveChangesAsync();
+        }
+
+        // =============================================
         // ADD RANGE (bulk insert)
         // EF Core sẽ batch insert hiệu quả
         // =============================================

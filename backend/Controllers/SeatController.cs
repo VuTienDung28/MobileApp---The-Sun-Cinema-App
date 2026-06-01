@@ -118,5 +118,33 @@ namespace backend.Controllers
                     ex.Message));
             }
         }
+        // =============================================
+        // PUT /api/cinema/{cinemaId}/room/{roomId}/seat/{seatId}/status
+        // Cập nhật trạng thái của 1 ghế (Active <-> Broken) (Admin only)
+        // =============================================
+        [HttpPut("{seatId:int}/status")]
+        [Authorize(Policy = "AdminOnly")]
+        public async Task<IActionResult> ToggleStatus(int cinemaId, int roomId, int seatId)
+        {
+            try
+            {
+                await _seatService.ToggleSeatStatusAsync(roomId, seatId);
+                return Ok(ApiResponse<string>.Success(
+                    null,
+                    "Cập nhật trạng thái ghế thành công",
+                    "TOGGLE_SEAT_STATUS_SUCCESS"));
+            }
+            catch (UserFriendlyException ex)
+            {
+                return BadRequest(ApiResponse<string>.Failure(ex.ErrorCode, ex.Message));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse<string>.Failure(
+                    "SERVER_ERROR",
+                    "Lỗi hệ thống khi cập nhật trạng thái ghế.",
+                    ex.Message));
+            }
+        }
     }
 }

@@ -17,6 +17,9 @@ namespace backend.Models
         /// <summary>Loại ghế: Standard | VIP | Couple</summary>
         public string Type { get; set; } = string.Empty;
 
+        /// <summary>Trạng thái ghế: Active | Broken</summary>
+        public string Status { get; set; } = "Active";
+
         public Room Room { get; set; } = null!;
         public ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
     }

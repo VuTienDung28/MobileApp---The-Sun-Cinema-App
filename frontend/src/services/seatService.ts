@@ -6,6 +6,7 @@ export interface SeatDto {
   seatNumber: number;
   columnIndex: number;
   type: string;
+  status?: string;
 }
 
 export interface RoomSeatLayoutDto {
@@ -41,6 +42,10 @@ const seatService = {
 
   clearSeats: async (cinemaId: number, roomId: number): Promise<void> => {
     await axiosClient.delete(`/cinema/${cinemaId}/room/${roomId}/seat/clear`);
+  },
+
+  toggleSeatStatus: async (cinemaId: number, roomId: number, seatId: number): Promise<void> => {
+    await axiosClient.put(`/cinema/${cinemaId}/room/${roomId}/seat/${seatId}/status`);
   },
 };
 
