@@ -1,3 +1,4 @@
+using backend.Data;
 using backend.Dtos;
 using backend.Exceptions;
 using backend.Hubs;
@@ -5,6 +6,7 @@ using backend.Models;
 using backend.Repositories.Interface;
 using backend.Services.Interface;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -16,15 +18,18 @@ namespace backend.Services.Implements
         private readonly IBookingRepository _bookingRepository;
         private readonly PaymentService _paymentService;
         private readonly IHubContext<SeatHub> _hubContext;
+        private readonly AppDbContext _db;
 
         public BookingService(
             IBookingRepository bookingRepository,
             PaymentService paymentService,
-            IHubContext<SeatHub> hubContext)
+            IHubContext<SeatHub> hubContext,
+            AppDbContext db)
         {
             _bookingRepository = bookingRepository;
             _paymentService = paymentService;
             _hubContext = hubContext;
+            _db = db;
         }
 
         public async Task<HoldBookingResponseDto> HoldSeatsAsync(string? userId, HoldBookingRequest request)
@@ -72,7 +77,10 @@ namespace backend.Services.Implements
                 seatsPrice += currentPrice;
             }
 
-            decimal totalPrice = seatsPrice ;
+            decimal foodTotal = Math.Max(request.FoodTotal, 0);
+            decimal baseTotal = seatsPrice + foodTotal;
+            var (voucher, discountAmount) = await ResolveVoucherDiscountAsync(request.VoucherCode, baseTotal);
+            decimal totalPrice = Math.Round(Math.Max(baseTotal - discountAmount, 0), 0, MidpointRounding.AwayFromZero);
 
             using var transaction = await _bookingRepository.BeginTransactionAsync();
             try
@@ -89,8 +97,9 @@ namespace backend.Services.Implements
                     CinemaName = showtime.Room?.Cinema?.Name ?? "",
                     CinemaAddress = showtime.Room?.Cinema?.Address ?? "",
                     RoomName = showtime.Room?.Name ?? "",
-                    ComboNames = "", // To be populated if Combos are implemented
+                    ComboNames = foodTotal > 0 ? "Food & drink" : "",
                     ShowtimeStart = showtime.StartTime,
+                    VoucherId = voucher?.Id,
                     BookingTime = DateTime.UtcNow,
                     TotalPrice = totalPrice,
                     Status = "Pending"
@@ -135,7 +144,12 @@ namespace backend.Services.Implements
                 return new HoldBookingResponseDto
                 {
                     BookingId = booking.Id,
+                    SeatTotal = seatsPrice,
+                    FoodTotal = foodTotal,
+                    DiscountAmount = discountAmount,
                     TotalPrice = totalPrice,
+                    VoucherId = voucher?.Id,
+                    VoucherCode = voucher?.Code,
                     QrUrl = qrUrl
                 };
             }
@@ -144,6 +158,61 @@ namespace backend.Services.Implements
                 await transaction.RollbackAsync();
                 throw;
             }
+        }
+
+        private async Task<(Voucher? Voucher, decimal DiscountAmount)> ResolveVoucherDiscountAsync(string? voucherCode, decimal orderTotal)
+        {
+            var normalizedCode = voucherCode?.Trim().ToUpperInvariant();
+            if (string.IsNullOrEmpty(normalizedCode))
+            {
+                return (null, 0);
+            }
+
+            var voucher = await _db.Vouchers.FirstOrDefaultAsync(v => v.Code.ToUpper() == normalizedCode);
+            if (voucher == null)
+            {
+                throw new UserFriendlyException("Ma voucher khong ton tai.", "VOUCHER_NOT_FOUND");
+            }
+
+            var now = DateTime.UtcNow;
+            if (!voucher.IsActive)
+            {
+                throw new UserFriendlyException("Voucher dang tam tat.", "VOUCHER_INACTIVE");
+            }
+
+            if (voucher.StartDate > now || voucher.EndDate < now)
+            {
+                throw new UserFriendlyException("Voucher chua den han hoac da het han.", "VOUCHER_EXPIRED");
+            }
+
+            if (voucher.UsedCount >= voucher.UsageLimit)
+            {
+                throw new UserFriendlyException("Voucher da het luot su dung.", "VOUCHER_USED_UP");
+            }
+
+            if (orderTotal < voucher.MinOrderValue)
+            {
+                throw new UserFriendlyException("Don hang chua dat gia tri toi thieu de dung voucher.", "VOUCHER_MIN_ORDER");
+            }
+
+            decimal discountAmount;
+            switch ((voucher.DiscountType ?? string.Empty).Trim().ToLowerInvariant())
+            {
+                case "percentage":
+                    discountAmount = orderTotal * voucher.DiscountValue / 100;
+                    if (voucher.MaxDiscount.HasValue && voucher.MaxDiscount.Value > 0)
+                    {
+                        discountAmount = Math.Min(discountAmount, voucher.MaxDiscount.Value);
+                    }
+                    break;
+                case "fixed":
+                    discountAmount = voucher.DiscountValue;
+                    break;
+                default:
+                    throw new UserFriendlyException("Loai voucher khong hop le.", "VOUCHER_INVALID_TYPE");
+            }
+
+            return (voucher, Math.Round(Math.Min(discountAmount, orderTotal), 0, MidpointRounding.AwayFromZero));
         }
 
         public async Task<string> CheckAndExpireBookingAsync(int bookingId)

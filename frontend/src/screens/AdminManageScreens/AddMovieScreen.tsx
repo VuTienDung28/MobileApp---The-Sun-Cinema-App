@@ -25,6 +25,42 @@ import useAlertStore from '../../store/useAlertStore';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AddMovie'>;
 
+const parseReleaseDateInput = (value: string) => {
+  const dateParts = value.trim().split('/');
+  if (dateParts.length !== 3) return null;
+
+  const [dayText, monthText, yearText] = dateParts;
+  const day = Number(dayText);
+  const month = Number(monthText);
+  const year = Number(yearText);
+
+  if (!Number.isInteger(day) || !Number.isInteger(month) || !Number.isInteger(year)) {
+    return null;
+  }
+
+  const date = new Date(year, month - 1, day);
+  date.setHours(0, 0, 0, 0);
+
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return null;
+  }
+
+  return date;
+};
+
+const getTodayStart = () => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today;
+};
+
+const toDateOnlyISOString = (date: Date) =>
+  new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())).toISOString();
+
 const AddMovieScreen: React.FC<Props> = ({ navigation }) => {
   const [movieTitle, setMovieTitle] = useState('');
   const [genre, setGenre] = useState('');
@@ -40,6 +76,17 @@ const AddMovieScreen: React.FC<Props> = ({ navigation }) => {
   const [posterImage, setPosterImage] = useState<string | null>(null);
   const [backdropImage, setBackdropImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const showPastReleaseDateError = () => {
+    useAlertStore.getState().showAlert('Lỗi', 'thời gian không được trong quá khứ', { type: 'warning' });
+  };
+
+  const handleReleaseDateBlur = () => {
+    const parsedReleaseDate = parseReleaseDateInput(releaseDate);
+    if (parsedReleaseDate && parsedReleaseDate < getTodayStart()) {
+      showPastReleaseDateError();
+    }
+  };
 
   // Hàm chọn ảnh từ thư viện
   const pickImage = async (type: 'poster' | 'backdrop') => {
@@ -115,9 +162,14 @@ const AddMovieScreen: React.FC<Props> = ({ navigation }) => {
     }
 
     // Kiểm tra định dạng ngày DD/MM/YYYY
-    const dateParts = releaseDate.split('/');
-    if (dateParts.length !== 3) {
+    const parsedReleaseDate = parseReleaseDateInput(releaseDate);
+    if (!parsedReleaseDate) {
       useAlertStore.getState().showAlert('Định dạng sai', 'Ngày chiếu không đúng định dạng DD/MM/YYYY', { type: 'warning' });
+      return;
+    }
+
+    if (parsedReleaseDate < getTodayStart()) {
+      showPastReleaseDateError();
       return;
     }
 
@@ -132,7 +184,7 @@ const AddMovieScreen: React.FC<Props> = ({ navigation }) => {
         director: director,
         movieActors: actors,
         duration: parseInt(duration),
-        releaseDate: new Date(releaseDate.split('/').reverse().join('-')).toISOString(), 
+        releaseDate: toDateOnlyISOString(parsedReleaseDate),
         description: description,
         ageRestriction,
         language,
@@ -319,6 +371,7 @@ const AddMovieScreen: React.FC<Props> = ({ navigation }) => {
               placeholderTextColor="#BDBDBD"
               value={releaseDate}
               onChangeText={setReleaseDate}
+              onBlur={handleReleaseDateBlur}
             />
           </View>
 

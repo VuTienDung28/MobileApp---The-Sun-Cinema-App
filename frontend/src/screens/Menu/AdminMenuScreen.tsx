@@ -12,11 +12,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types';  
 import useAuthStore from '../../store/useAuthStore';  
+import useAlertStore from '../../store/useAlertStore';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AdminMenu'>;
 
 const AdminMenuScreen: React.FC<Props> = ({ navigation }) => {
   const signOut = useAuthStore(state => state.signOut);
+  const showAlert = useAlertStore(state => state.showAlert);
 
   const menuItems = [
     {
@@ -25,7 +27,7 @@ const AdminMenuScreen: React.FC<Props> = ({ navigation }) => {
       description: 'Thêm, sửa, xóa phim',
       icon: 'film-outline' as const,
       color: '#FF6B6B',
-      screen: 'AddMovie',
+      screen: 'MovieManagement',
     },
     {
       key: 'TheaterManagement',
@@ -33,7 +35,7 @@ const AdminMenuScreen: React.FC<Props> = ({ navigation }) => {
       description: 'Quản lý rạp chiếu phim',
       icon: 'business-outline' as const,
       color: '#4ECDC4',
-      screen: 'AddTheater',
+      screen: 'TheaterManagement',
     },
     {
       key: 'VoucherManagement', // Thêm mới
@@ -62,8 +64,13 @@ const AdminMenuScreen: React.FC<Props> = ({ navigation }) => {
 
   const handlePress = async (item: typeof menuItems[0]) => {
     if (item.key === 'Logout') {
-      await signOut();
-      navigation.reset({ index: 0, routes: [{ name: 'Login' as never }] });
+      showAlert('Đăng xuất', 'Bạn có chắc chắn muốn đăng xuất khỏi ứng dụng?', {
+        type: 'warning',
+        buttons: [
+          { text: 'Hủy', style: 'cancel' },
+          { text: 'Xác nhận', onPress: () => signOut() },
+        ],
+      });
     } else if (item.screen) {
       navigation.navigate(item.screen as never);
     }

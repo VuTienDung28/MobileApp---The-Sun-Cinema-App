@@ -2,40 +2,40 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using backend.Data;
 using backend.DTOs;
 using backend.Models;
+using backend.Repositories.Interface;
 using backend.Services.Interface;
 
-namespace backend.Services.Implementation
+namespace backend.Services.Implements
 {
     public class VoucherService : IVoucherService
     {
-        private readonly AppDbContext _context;
+        private readonly IVoucherRepository _voucherRepository;
 
-        public VoucherService(AppDbContext context)
+        public VoucherService(IVoucherRepository voucherRepository)
         {
-            _context = context;
+            _voucherRepository = voucherRepository;
         }
 
         public async Task<IEnumerable<VoucherDto>> GetAllVouchersAsync()
         {
-            var vouchers = await _context.Vouchers.ToListAsync();
+            var vouchers = await _voucherRepository.GetAllAsync();
             return vouchers.Select(MapToDto);
         }
 
         public async Task<VoucherDto?> GetVoucherByIdAsync(int id)
         {
-            var voucher = await _context.Vouchers.FindAsync(id);
+            var voucher = await _voucherRepository.GetByIdAsync(id);
             if (voucher == null) return null;
 
+            await DeactivateUsedUpVouchersAsync(new[] { voucher });
             return MapToDto(voucher);
         }
 
         public async Task<VoucherDto> CreateVoucherAsync(CreateVoucherDto voucherDto)
         {
-            var exists = await _context.Vouchers.AnyAsync(v => v.Code.ToLower() == voucherDto.Code.ToLower());
+            var exists = await _voucherRepository.ExistsByCodeAsync(voucherDto.Code);
             if (exists)
             {
                 throw new Exception("Mã voucher đã tồn tại");
@@ -56,24 +56,20 @@ namespace backend.Services.Implementation
                 IsActive = true
             };
 
-            _context.Vouchers.Add(voucher);
-            await _context.SaveChangesAsync();
+            await _voucherRepository.AddAsync(voucher);
 
             return MapToDto(voucher);
         }
 
         public async Task<VoucherDto?> UpdateVoucherAsync(int id, CreateVoucherDto voucherDto)
         {
-            var voucher = await _context.Vouchers.FindAsync(id);
+            var voucher = await _voucherRepository.GetByIdAsync(id);
             if (voucher == null) return null;
 
-            if (voucher.Code.ToLower() != voucherDto.Code.ToLower())
+            var exists = await _voucherRepository.ExistsByCodeAsync(voucherDto.Code, id);
+            if (exists)
             {
-                var exists = await _context.Vouchers.AnyAsync(v => v.Code.ToLower() == voucherDto.Code.ToLower());
-                if (exists)
-                {
-                    throw new Exception("Mã voucher đã tồn tại");
-                }
+                throw new Exception("Mã voucher đã tồn tại");
             }
 
             voucher.Code = voucherDto.Code.ToUpper();
@@ -85,30 +81,45 @@ namespace backend.Services.Implementation
             voucher.StartDate = voucherDto.StartDate;
             voucher.EndDate = voucherDto.EndDate;
             voucher.UsageLimit = voucherDto.UsageLimit;
+            if (voucher.UsedCount >= voucher.UsageLimit)
+            {
+                voucher.IsActive = false;
+            }
 
-            await _context.SaveChangesAsync();
+            await _voucherRepository.UpdateAsync(voucher);
             return MapToDto(voucher);
         }
 
         public async Task<bool> DeleteVoucherAsync(int id)
         {
-            var voucher = await _context.Vouchers.FindAsync(id);
+            var voucher = await _voucherRepository.GetByIdAsync(id);
             if (voucher == null) return false;
 
-            _context.Vouchers.Remove(voucher);
-            await _context.SaveChangesAsync();
+            await _voucherRepository.DeleteAsync(voucher);
             return true;
         }
 
         public async Task<VoucherDto?> ToggleVoucherStatusAsync(int id)
         {
-            var voucher = await _context.Vouchers.FindAsync(id);
+            var voucher = await _voucherRepository.GetByIdAsync(id);
             if (voucher == null) return null;
 
             voucher.IsActive = !voucher.IsActive;
-            await _context.SaveChangesAsync();
+            await _voucherRepository.UpdateAsync(voucher);
             
             return MapToDto(voucher);
+        }
+
+        private async Task DeactivateUsedUpVouchersAsync(IEnumerable<Voucher> vouchers)
+        {
+            foreach (var voucher in vouchers)
+            {
+                if (voucher.IsActive && voucher.UsedCount >= voucher.UsageLimit)
+                {
+                    voucher.IsActive = false;
+                    await _voucherRepository.UpdateAsync(voucher);
+                }
+            }
         }
 
         private static VoucherDto MapToDto(Voucher voucher)

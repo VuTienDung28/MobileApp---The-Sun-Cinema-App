@@ -86,6 +86,12 @@ namespace backend.Controllers
                         {
                             if (booking.BookingTime > DateTime.UtcNow.AddMinutes(-10))
                             {
+                                var expectedAmount = (long)Math.Round(booking.TotalPrice, MidpointRounding.AwayFromZero);
+                                if (request.Amount != expectedAmount)
+                                {
+                                    return BadRequest(new { Message = "So tien thanh toan khong khop voi don hang." });
+                                }
+
                                 booking.Status = "Completed";
 
                                 var payment = new backend.Models.Payment
@@ -96,6 +102,19 @@ namespace backend.Controllers
                                     Status = "Success"
                                 };
                                 _context.Payments.Add(payment);
+
+                                if (booking.VoucherId.HasValue)
+                                {
+                                    var voucher = await _context.Vouchers.FindAsync(booking.VoucherId.Value);
+                                    if (voucher != null)
+                                    {
+                                        voucher.UsedCount += 1;
+                                        if (voucher.UsedCount >= voucher.UsageLimit)
+                                        {
+                                            voucher.IsActive = false;
+                                        }
+                                    }
+                                }
 
                                 var ticketsToUpdate = await _context.Tickets.Where(t => t.BookingId == bookingId).ToListAsync();
                                 foreach (var t in ticketsToUpdate)

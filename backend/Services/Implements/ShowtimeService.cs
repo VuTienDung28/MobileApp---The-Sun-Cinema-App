@@ -18,6 +18,7 @@ namespace backend.Services.Implements
 
         // Buffer thêm vào sau EndTime khi check conflict (phút dọn phòng)
         private const int BufferMinutes = 15;
+        private const int ShowingWindowDays = 20;
 
         public ShowtimeService(
             IShowtimeRepository showtimeRepository,
@@ -72,6 +73,8 @@ namespace backend.Services.Implements
                     CinemaId = cinema.Id,
                     CinemaName = cinema.Name,
                     CinemaAddress = cinema.Address,
+                    Latitude = cinema.Latitude,
+                    Longitude = cinema.Longitude,
                     Showtimes = slots.OrderBy(s => s.StartTime).ToList()
                 });
             }
@@ -149,6 +152,11 @@ namespace backend.Services.Implements
                     "Phòng chiếu chưa được cài đặt sơ đồ ghế. Hãy tạo ghế trước khi thêm suất chiếu.",
                     "ROOM_HAS_NO_SEATS");
 
+            if (!CanScheduleMovieAt(movie, dto.StartTime))
+                throw new UserFriendlyException(
+                    "Chi co the tao suat chieu trong 20 ngay ke tu ngay phat hanh phim.",
+                    "SHOWTIME_BEFORE_MOVIE_RELEASE");
+
             // Kiểm tra StartTime phải ở tương lai
             if (dto.StartTime <= DateTime.UtcNow)
                 throw new UserFriendlyException(
@@ -197,6 +205,11 @@ namespace backend.Services.Implements
                         "Giờ bắt đầu mới phải ở trong tương lai.",
                         "SHOWTIME_INVALID_START_TIME");
 
+                if (!CanScheduleMovieAt(showtime.Movie, dto.StartTime.Value))
+                    throw new UserFriendlyException(
+                        "Chi co the cap nhat suat chieu trong 20 ngay ke tu ngay phat hanh phim.",
+                        "SHOWTIME_BEFORE_MOVIE_RELEASE");
+
                 var endTime = dto.StartTime.Value.AddMinutes(showtime.Movie.Duration + BufferMinutes);
 
                 // Check conflict, loại trừ chính suất chiếu đang update
@@ -240,6 +253,15 @@ namespace backend.Services.Implements
 
         private static DateTime CalculateEndTime(Showtime s)
             => s.StartTime.AddMinutes(s.Movie.Duration + BufferMinutes);
+
+        private static bool CanScheduleMovieAt(Movie movie, DateTime startTime)
+        {
+            var releaseDate = movie.ReleaseDate.Date;
+            var showtimeDate = startTime.Date;
+            var lastShowingDate = releaseDate.AddDays(ShowingWindowDays);
+
+            return releaseDate <= showtimeDate && showtimeDate <= lastShowingDate;
+        }
 
         private static ShowtimeDetailDto MapToDetail(Showtime s, int bookedSeats)
         {

@@ -12,7 +12,11 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import { calculateDistance } from "../../utils/locationUtils";
+
 import AppSideMenu from "../../components/AppSideMenu";
+
+
+
 const formatDistance = (dist: number) => {
     if (dist < 1) {
         return `${Math.round(dist * 1000)}m`;
