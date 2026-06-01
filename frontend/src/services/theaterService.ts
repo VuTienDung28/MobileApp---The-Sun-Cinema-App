@@ -22,11 +22,15 @@ export interface CinemaDetailDto {
 export interface CreateCinemaDto {
   name: string;
   address: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface UpdateCinemaDto {
   name?: string;
   address?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 const theaterService = {

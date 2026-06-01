@@ -92,7 +92,7 @@ const AddTheaterScreen: React.FC<Props> = ({ navigation }) => {
           type: 'success',
           buttons: [{ 
             text: 'OK', 
-            onPress: () => navigation.navigate('AdminHome', { refreshTheaters: true } as never) 
+            onPress: () => navigation.goBack()
           }]
         }
       );

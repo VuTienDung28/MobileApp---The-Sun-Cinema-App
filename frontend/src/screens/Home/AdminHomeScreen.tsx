@@ -280,7 +280,9 @@ const AdminHomeScreen: React.FC<Props> = ({ navigation }) => {
 
   // Lấy tiêu đề cho nút bộ lọc
   const getStatusButtonTitle = () => {
-    return movieStatusFilter === 'nowShowing' ? '🎬 Đang chiếu' : '⏰ Sắp chiếu';
+    if (movieStatusFilter === 'nowShowing') return '🎬 Đang chiếu';
+    if (movieStatusFilter === 'comingSoon') return '⏰ Sắp chiếu';
+    return '📽️ Đã chiếu';
   };
 
   // Lấy số lượng phim theo từng loại
@@ -290,6 +292,10 @@ const AdminHomeScreen: React.FC<Props> = ({ navigation }) => {
 
   const getComingSoonCount = () => {
     return movies.filter(movie => getMovieStatus(movie.releaseDate) === 'comingSoon').length;
+  };
+
+  const getArchivedCount = () => {
+    return movies.filter(movie => getMovieStatus(movie.releaseDate) === 'archived').length;
   };
 
   // Lấy danh sách rạp
@@ -635,6 +641,18 @@ const AdminHomeScreen: React.FC<Props> = ({ navigation }) => {
                 <Ionicons name="calendar-outline" size={20} color="#F59E0B" />
                 <Text style={styles.modalItemText}>⏰ Sắp chiếu</Text>
                 <Text style={styles.modalItemCount}>({getComingSoonCount()})</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.modalItem}
+                onPress={() => {
+                  setMovieStatusFilter('archived');
+                  setShowStatusMenu(false);
+                }}
+              >
+                <Ionicons name="albums-outline" size={20} color="#999" />
+                <Text style={styles.modalItemText}>📽️ Đã chiếu</Text>
+                <Text style={styles.modalItemCount}>({getArchivedCount()})</Text>
               </TouchableOpacity>
             </View>
           </View>
