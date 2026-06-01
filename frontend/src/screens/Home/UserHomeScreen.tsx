@@ -8,6 +8,7 @@ import {
   Dimensions,
   ActivityIndicator,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -33,11 +34,10 @@ const formatDate = (dateString: string) => {
   if (!dateString) return "Sắp chiếu";
 
   const date = new Date(dateString);
-  const day = date.getDate();
-  const month = date.getMonth() + 1;
-  const year = date.getFullYear();
 
-  return `${day} Thg ${month}, ${year}`;
+  return `${date.getDate()} Thg ${
+    date.getMonth() + 1
+  }, ${date.getFullYear()}`;
 };
 
 export default function UserHomeScreen() {
@@ -62,17 +62,9 @@ export default function UserHomeScreen() {
         data = await movieService.getComingSoon();
       }
 
-      console.log(`[UserHome] Loaded ${data.length} movies for tab: ${tab}`);
-
-      if (data.length > 0) {
-        console.log(
-          `[UserHome] Sample movie: ${data[0].title}, Date: ${data[0].releaseDate}`
-        );
-      }
-
       setMovies(data);
     } catch (error) {
-      console.error("Error fetching movies:", error);
+      console.error(error);
     } finally {
       setIsLoading(false);
     }
@@ -91,229 +83,230 @@ export default function UserHomeScreen() {
 
   return (
     <View style={styles.wrapper}>
-      <View style={styles.container}>
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 130 }}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 140 }}
+      >
+        {/* HEADER */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.avatar}
+            onPress={() => navigation.navigate("Profile")}
+          >
+            {avatarUrl ? (
+              <Image
+                source={{ uri: getImageUrl(avatarUrl) }}
+                style={styles.avatarImage}
+                contentFit="cover"
+              />
+            ) : (
+              <Ionicons name="person" size={24} color="#FFB800" />
+            )}
+          </TouchableOpacity>
+
+          <View style={styles.logoBox}>
+            <Text style={styles.sun}>☀️</Text>
+            <Text style={styles.logo}>THE SUN</Text>
+          </View>
+
+          <TouchableOpacity onPress={() => setShowMenu(true)}>
+            <Ionicons name="menu" size={36} color="#4A2C13" />
+          </TouchableOpacity>
+        </View>
+
+        {/* BANNER */}
+        {/* BANNER */}
+        {/* BANNER */}
+        <TouchableOpacity
+          activeOpacity={0.95}
+          onPress={() => navigation.navigate("Promotion")}
+          style={styles.bannerContainer}
         >
-          <View style={styles.header}>
-            <TouchableOpacity
-              style={styles.avatar}
-              activeOpacity={0.7}
-              onPress={() => navigation.navigate("Profile")}
+          <Image
+            source={require("../../../assets/banners/home-banner.png")}
+            style={styles.bannerFull}
+            contentFit="cover"
+          />
+        </TouchableOpacity>
+        {/* TABS */}
+        <View style={styles.tabsContainer}>
+          <TouchableOpacity
+            style={[
+              styles.tab,
+              activeTab === "Đang chiếu" && styles.activeTab,
+            ]}
+            onPress={() => changeTab("Đang chiếu")}
+          >
+            <Ionicons
+              name="film-outline"
+              size={18}
+              color={activeTab === "Đang chiếu" ? "#fff" : "#4A2C13"}
+            />
+
+            <Text
+              style={
+                activeTab === "Đang chiếu"
+                  ? styles.activeTabText
+                  : styles.tabText
+              }
             >
-              {avatarUrl ? (
+              Đang chiếu
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.tab,
+              activeTab === "Sắp chiếu" && styles.activeTab,
+            ]}
+            onPress={() => changeTab("Sắp chiếu")}
+          >
+            <Ionicons
+              name="calendar-outline"
+              size={18}
+              color={activeTab === "Sắp chiếu" ? "#fff" : "#4A2C13"}
+            />
+
+            <Text
+              style={
+                activeTab === "Sắp chiếu"
+                  ? styles.activeTabText
+                  : styles.tabText
+              }
+            >
+              Sắp chiếu
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* MOVIES */}
+        {isLoading ? (
+          <View style={styles.loadingBox}>
+            <ActivityIndicator size="large" color="#FFB800" />
+          </View>
+        ) : (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            snapToInterval={width * 0.72}
+            decelerationRate="fast"
+            contentContainerStyle={styles.movieRow}
+            onMomentumScrollEnd={(e) => {
+              const index = Math.round(
+                e.nativeEvent.contentOffset.x / (width * 0.72)
+              );
+
+              setActiveIndex(index);
+            }}
+          >
+            {movies.map((item, index) => (
+              <TouchableOpacity
+                key={item.id}
+                activeOpacity={0.9}
+                style={[
+                  styles.movieCard,
+                  activeIndex === index && styles.movieCardActive,
+                ]}
+                onPress={() => {
+                  if (activeIndex === index) {
+                    navigation.navigate("MovieDetail", {
+                      movieId: item.id,
+                    });
+                  } else {
+                    setActiveIndex(index);
+                  }
+                }}
+              >
                 <Image
-                  source={{ uri: getImageUrl(avatarUrl) }}
-                  style={styles.avatarImage}
-                  contentFit="cover"
-                  cachePolicy="memory-disk"
-                />
-              ) : (
-                <Ionicons name="person" size={24} color="#FFB800" />
-              )}
-            </TouchableOpacity>
-
-            <View style={styles.logoBox}>
-              <Text style={styles.sun}>☀️</Text>
-              <Text style={styles.logo}>THE SUN</Text>
-            </View>
-
-            <View style={styles.headerRight}>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => navigation.navigate("UserHome")}
-              >
-                <Ionicons name="home-outline" size={27} color="#4A2C13" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => setShowMenu(true)}
-                style={styles.headerIcon}
-              >
-                <Ionicons name="menu" size={34} color="#4A2C13" />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={styles.banner}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.bannerSmall}>Ưu đãi</Text>
-              <Text style={styles.bannerBig}>VÉ XEM PHIM</Text>
-              <Text style={styles.bannerToday}>HÔM NAY</Text>
-
-              <Text style={styles.bannerDesc}>
-                Nhiều phim hay - Ưu đãi mỗi ngày
-              </Text>
-
-              <TouchableOpacity
-                style={styles.bannerBtn}
-                onPress={() => navigation.navigate("Promotion")}
-              >
-                <Text style={styles.bannerBtnText}>XEM NGAY ›</Text>
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.bannerEmoji}>🍿🎟️</Text>
-          </View>
-
-          <View style={styles.tabs}>
-            <TouchableOpacity
-              style={[
-                styles.tab,
-                activeTab === "Đang chiếu" && styles.tabActive,
-                { flex: 1 },
-              ]}
-              onPress={() => changeTab("Đang chiếu")}
-            >
-              <Ionicons
-                name="film-outline"
-                size={18}
-                color={activeTab === "Đang chiếu" ? "#fff" : "#4A2C13"}
-              />
-
-              <Text
-                style={
-                  activeTab === "Đang chiếu"
-                    ? styles.tabActiveText
-                    : styles.tabText
-                }
-              >
-                Đang chiếu
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.tab,
-                activeTab === "Sắp chiếu" && styles.tabActive,
-                { flex: 1, marginLeft: 10 },
-              ]}
-              onPress={() => changeTab("Sắp chiếu")}
-            >
-              <Ionicons
-                name="calendar-outline"
-                size={18}
-                color={activeTab === "Sắp chiếu" ? "#fff" : "#4A2C13"}
-              />
-
-              <Text
-                style={
-                  activeTab === "Sắp chiếu"
-                    ? styles.tabActiveText
-                    : styles.tabText
-                }
-              >
-                Sắp chiếu
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {isLoading ? (
-            <View style={styles.loadingBox}>
-              <ActivityIndicator size="large" color="#FFB800" />
-            </View>
-          ) : movies.length > 0 ? (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              snapToInterval={width * 0.62}
-              decelerationRate="fast"
-              contentContainerStyle={styles.movieRow}
-              onMomentumScrollEnd={(e) => {
-                const index = Math.round(
-                  e.nativeEvent.contentOffset.x / (width * 0.62)
-                );
-
-                setActiveIndex(Math.max(0, Math.min(index, movies.length - 1)));
-              }}
-            >
-              {movies.map((item, index) => (
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  key={`${activeTab}-${item.id}`}
-                  style={[
-                    styles.movieCard,
-                    activeIndex === index && styles.movieCardActive,
-                  ]}
-                  onPress={() => {
-                    if (activeIndex === index) {
-                      navigation.navigate("MovieDetail", {
-                        movieId: item.id,
-                      });
-                    } else {
-                      setActiveIndex(index);
-                    }
+                  source={{
+                    uri: getImageUrl(item.thumbnailPosterUrl),
                   }}
-                >
-                  <Image
-                    source={{ uri: getImageUrl(item.thumbnailPosterUrl) }}
-                    style={styles.poster}
-                    contentFit="cover"
-                    transition={200}
-                    cachePolicy="disk"
-                  />
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          ) : (
-            <View style={styles.emptyBox}>
-              <Text style={styles.emptyText}>Chưa có phim nào</Text>
-            </View>
-          )}
+                  style={styles.poster}
+                  contentFit="cover"
+                />
 
-          {activeMovie && (
-            <View style={styles.infoBox}>
-              <View style={{ flex: 1 }}>
-                <Text numberOfLines={1} style={styles.movieTitle}>
-                  {activeMovie.title}
+                <LinearGradient
+                  colors={["transparent", "rgba(0,0,0,0.8)"]}
+                  style={styles.posterOverlay}
+                >
+                  <Text numberOfLines={1} style={styles.posterTitle}>
+                    {item.title}
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
+
+        {/* MOVIE INFO */}
+        {activeMovie && (
+          <View style={styles.infoBox}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.movieTitle}>
+                {activeMovie.title}
+              </Text>
+
+              <View style={styles.metaRow}>
+                <Ionicons
+                  name="time-outline"
+                  size={18}
+                  color="#6B4B2A"
+                />
+
+                <Text style={styles.meta}>
+                  {formatDuration(activeMovie.duration)}
                 </Text>
 
-                <View style={styles.metaRow}>
-                  <Ionicons name="time-outline" size={18} color="#4A2C13" />
+                <Text style={styles.divide}>|</Text>
 
-                  <Text style={styles.meta}>
-                    {formatDuration(activeMovie.duration)}
-                  </Text>
+                <Ionicons
+                  name="calendar-outline"
+                  size={18}
+                  color="#6B4B2A"
+                />
 
-                  <Text style={styles.divide}>|</Text>
-
-                  <Ionicons name="calendar-outline" size={18} color="#4A2C13" />
-
-                  <Text numberOfLines={1} style={styles.meta}>
-                    {formatDate(activeMovie.releaseDate)}
-                  </Text>
-                </View>
+                <Text style={styles.meta}>
+                  {formatDate(activeMovie.releaseDate)}
+                </Text>
               </View>
-
-              <TouchableOpacity
-                style={styles.bookBtn}
-                onPress={() =>
-                  navigation.navigate("MovieDetail", {
-                    movieId: activeMovie.id,
-                  })
-                }
-              >
-                <Text style={styles.bookText}>Đặt Vé</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          <TouchableOpacity style={styles.supportBox}>
-            <Text style={styles.supportEmoji}>🌻</Text>
-
-            <View style={{ flex: 1 }}>
-              <Text style={styles.supportTitle}>Bạn cần hỗ trợ gì?</Text>
-              <Text style={styles.supportDesc}>
-                The Sun luôn sẵn sàng hỗ trợ bạn!
-              </Text>
             </View>
 
-            <Ionicons name="chevron-forward" size={28} color="#4A2C13" />
-          </TouchableOpacity>
-        </ScrollView>
-      </View>
+            <TouchableOpacity
+              style={styles.bookBtn}
+              onPress={() =>
+                navigation.navigate("MovieDetail", {
+                  movieId: activeMovie.id,
+                })
+              }
+            >
+              <Text style={styles.bookBtnText}>Đặt Vé</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* SUPPORT */}
+        <TouchableOpacity style={styles.supportBox}>
+          <View style={styles.supportIcon}>
+            <Text style={{ fontSize: 30 }}>🌻</Text>
+          </View>
+
+          <View style={{ flex: 1 }}>
+            <Text style={styles.supportTitle}>
+              Bạn cần hỗ trợ gì?
+            </Text>
+
+            <Text style={styles.supportDesc}>
+              The Sun luôn sẵn sàng hỗ trợ bạn mọi lúc.
+            </Text>
+          </View>
+
+          <Ionicons
+            name="chevron-forward"
+            size={24}
+            color="#4A2C13"
+          />
+        </TouchableOpacity>
+      </ScrollView>
 
       <AppSideMenu
         visible={showMenu}
@@ -327,16 +320,11 @@ export default function UserHomeScreen() {
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    backgroundColor: "#FFF4CF",
-  },
-
-  container: {
-    flex: 1,
-    backgroundColor: "#FFF4CF",
+    backgroundColor: "#FFF8E7",
   },
 
   header: {
-    paddingTop: 48,
+    paddingTop: 58,
     paddingHorizontal: 24,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -344,19 +332,19 @@ const styles = StyleSheet.create({
   },
 
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     backgroundColor: "#fff",
     justifyContent: "center",
     alignItems: "center",
     overflow: "hidden",
+    elevation: 4,
   },
 
   avatarImage: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: "100%",
+    height: "100%",
   },
 
   logoBox: {
@@ -368,101 +356,46 @@ const styles = StyleSheet.create({
   },
 
   logo: {
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: "900",
     color: "#FFB800",
+    letterSpacing: 1,
   },
 
-  headerRight: {
-    flexDirection: "row",
-    gap: 16,
-    alignItems: "center",
-  },
-
-  headerIcon: {
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  banner: {
-    marginHorizontal: 22,
-    marginTop: 22,
-    padding: 22,
-    borderRadius: 26,
-    backgroundColor: "#FFD96D",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    minHeight: 190,
-  },
-
-  bannerSmall: {
-    fontSize: 30,
-    fontWeight: "800",
-    color: "#4A2C13",
-    fontStyle: "italic",
-  },
-
-  bannerBig: {
-    fontSize: 26,
-    fontWeight: "900",
-    color: "#fff",
-    marginTop: 6,
-  },
-
-  bannerToday: {
-    fontSize: 28,
-    fontWeight: "900",
-    color: "#4A2C13",
-    marginTop: 4,
-  },
-
-  bannerDesc: {
-    marginTop: 10,
-    fontSize: 14,
-    color: "#4A2C13",
-    width: 190,
-  },
-
-  bannerBtn: {
-    marginTop: 16,
-    backgroundColor: "#FFB800",
-    alignSelf: "flex-start",
-    paddingHorizontal: 24,
-    paddingVertical: 11,
-    borderRadius: 24,
-  },
-
-  bannerBtnText: {
-    color: "#fff",
-    fontWeight: "900",
-    fontSize: 14,
-  },
-
-  bannerEmoji: {
-    fontSize: 56,
-    alignSelf: "center",
-    marginLeft: 10,
-  },
-
-  tabs: {
+  bannerContainer: {
     marginHorizontal: 20,
-    marginTop: 36,
+    marginTop: 20,
+    height: 180,
+    borderRadius: 24,
+    overflow: "hidden",
+    elevation: 8,
+  },
+
+  bannerFull: {
+    width: "100%",
+    height: "100%",
+  },
+
+  tabsContainer: {
+    marginHorizontal: 20,
+    marginTop: 34,
+    backgroundColor: "#F7EFD7",
+    borderRadius: 24,
+    padding: 6,
     flexDirection: "row",
-    justifyContent: "space-between",
   },
 
   tab: {
-    backgroundColor: "#fff",
-    paddingHorizontal: 22,
+    flex: 1,
     height: 56,
-    borderRadius: 20,
-    flexDirection: "row",
+    borderRadius: 18,
+    justifyContent: "center",
     alignItems: "center",
+    flexDirection: "row",
     gap: 8,
   },
 
-  tabActive: {
+  activeTab: {
     backgroundColor: "#FFB800",
   },
 
@@ -472,7 +405,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
 
-  tabActiveText: {
+  activeTabText: {
     color: "#fff",
     fontWeight: "900",
     fontSize: 15,
@@ -483,28 +416,20 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  emptyBox: {
-    height: 340,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  emptyText: {
-    color: "#4A2C13",
-    opacity: 0.6,
-  },
-
   movieRow: {
-    paddingHorizontal: width * 0.18,
-    paddingTop: 34,
+    paddingLeft: 24,
+    paddingRight: 12,
+    paddingTop: 36,
   },
 
   movieCard: {
-    width: width * 0.56,
-    height: 340,
+    width: width * 0.66,
+    height: 390,
     marginRight: 24,
+    borderRadius: 32,
+    overflow: "hidden",
     opacity: 0.55,
-    transform: [{ scale: 0.88 }],
+    transform: [{ scale: 0.92 }],
   },
 
   movieCardActive: {
@@ -515,78 +440,102 @@ const styles = StyleSheet.create({
   poster: {
     width: "100%",
     height: "100%",
-    borderRadius: 28,
-    resizeMode: "cover",
+  },
+
+  posterOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 20,
+    justifyContent: "flex-end",
+    height: 120,
+  },
+
+  posterTitle: {
+    color: "#fff",
+    fontWeight: "900",
+    fontSize: 22,
   },
 
   infoBox: {
-    marginHorizontal: 26,
-    marginTop: 18,
+    marginHorizontal: 22,
+    marginTop: 22,
     backgroundColor: "#fff",
-    borderRadius: 22,
-    padding: 18,
+    borderRadius: 28,
+    padding: 20,
     flexDirection: "row",
     alignItems: "center",
+    elevation: 5,
   },
 
   movieTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: "900",
-    color: "#4A2C13",
+    color: "#2D1B0F",
   },
 
   metaRow: {
     flexDirection: "row",
     alignItems: "center",
+    marginTop: 12,
     gap: 6,
-    marginTop: 10,
   },
 
   meta: {
-    color: "#4A2C13",
+    color: "#6B4B2A",
+    fontWeight: "600",
   },
 
   divide: {
     marginHorizontal: 4,
+    color: "#6B4B2A",
   },
 
   bookBtn: {
     backgroundColor: "#FFB800",
-    paddingHorizontal: 22,
-    paddingVertical: 13,
-    borderRadius: 24,
-    marginLeft: 10,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 26,
+    marginLeft: 14,
   },
 
-  bookText: {
+  bookBtnText: {
     color: "#fff",
-    fontSize: 16,
     fontWeight: "900",
+    fontSize: 16,
   },
 
   supportBox: {
-    marginHorizontal: 26,
-    marginTop: 22,
+    marginHorizontal: 22,
+    marginTop: 24,
     backgroundColor: "#fff",
-    borderRadius: 22,
-    padding: 18,
+    borderRadius: 28,
+    padding: 20,
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 14,
+    elevation: 5,
   },
 
-  supportEmoji: {
-    fontSize: 42,
+  supportIcon: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: "#FFF4CF",
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   supportTitle: {
     fontSize: 18,
     fontWeight: "900",
-    color: "#4A2C13",
+    color: "#2D1B0F",
   },
 
   supportDesc: {
     marginTop: 4,
-    color: "#4A2C13",
+    color: "#6B4B2A",
+    lineHeight: 20,
   },
 });

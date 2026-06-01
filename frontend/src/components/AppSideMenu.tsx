@@ -5,9 +5,13 @@ import {
     StyleSheet,
     TouchableOpacity,
     Modal,
+    ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
+
 import useAuthStore from "../store/useAuthStore";
+import { getImageUrl } from "../utils/imageUtils";
 
 type AppSideMenuProps = {
     visible: boolean;
@@ -26,7 +30,17 @@ export default function AppSideMenu({
     onClose,
     navigation,
 }: AppSideMenuProps) {
-    const fullName = useAuthStore((state) => state.fullName);
+    const fullName = useAuthStore(
+        (state) => state.fullName
+    );
+
+    const avatarUrl = useAuthStore(
+        (state) => state.avatarUrl
+    );
+
+    const role = useAuthStore(
+        (state) => state.role
+    );
 
     const go = (screen: string) => {
         onClose();
@@ -34,85 +48,335 @@ export default function AppSideMenu({
     };
 
     return (
-        <Modal visible={visible} transparent animationType="fade">
+        <Modal
+            visible={visible}
+            transparent
+            animationType="slide"
+        >
             <View style={styles.modalWrap}>
                 <TouchableOpacity
-                    activeOpacity={1}
                     style={styles.leftBlank}
+                    activeOpacity={1}
                     onPress={onClose}
                 />
 
                 <View style={styles.sideMenu}>
-                    <TouchableOpacity style={styles.menuClose} onPress={onClose}>
-                        <Ionicons name="menu" size={38} color="#FFFFFF" />
-                    </TouchableOpacity>
-
-                    <View style={styles.avatar}>
-                        <Text style={styles.avatarText}>👨‍🍳</Text>
-                    </View>
-
-                    <Text style={styles.userName}>
-                        {fullName || "Người dùng"}
-                    </Text>
-
-                    <Text style={styles.memberRole}>Thẻ thành viên</Text>
-
-                    <TouchableOpacity
-                        style={styles.bigLink}
-                        onPress={() => go("MovieList")}
+                    <ScrollView
+                        showsVerticalScrollIndicator={
+                            false
+                        }
                     >
-                        <Text style={styles.bigLinkText}>Đặt vé theo Phim</Text>
-                    </TouchableOpacity>
+                        {/* Nút đóng */}
 
-                    <TouchableOpacity
-                        style={styles.bigLink}
-                        onPress={() => go("Theater")}
-                    >
-                        <Text style={styles.bigLinkText}>Đặt vé theo Rạp</Text>
-                    </TouchableOpacity>
+                        <TouchableOpacity
+                            style={
+                                styles.closeBtn
+                            }
+                            onPress={onClose}
+                        >
+                            <Ionicons
+                                name="close"
+                                size={28}
+                                color="#5A351B"
+                            />
+                        </TouchableOpacity>
 
-                    <View style={styles.grid}>
-                        <MenuIcon
-                            icon="home-outline"
-                            text="Trang chủ"
-                            onPress={() => go("UserHome")}
-                        />
+                        {/* Mặt trời */}
 
-                        <MenuIcon
-                            icon="person-outline"
-                            text="Thành viên"
-                            onPress={() => go("Profile")}
-                        />
+                        <Text style={styles.sun}>
+                            ☀️
+                        </Text>
 
-                        <MenuIcon
-                            icon="information-circle-outline"
-                            text="Rạp"
-                            onPress={() => go("Theater")}
-                        />
+                        {/* Avatar */}
 
-                        <MenuIcon
-                            icon="gift-outline"
-                            text="Tin mới & Ưu đãi"
-                            onPress={() => go("Promotion")}
-                        />
+                        <View
+                            style={
+                                styles.avatarWrapper
+                            }
+                        >
+                            {avatarUrl ? (
+                                <Image
+                                    source={{
+                                        uri: getImageUrl(
+                                            avatarUrl
+                                        ),
+                                    }}
+                                    style={
+                                        styles.avatarImage
+                                    }
+                                    contentFit="cover"
+                                />
+                            ) : (
+                                <Ionicons
+                                    name="person"
+                                    size={80}
+                                    color="#D29A1D"
+                                />
+                            )}
+                        </View>
 
-                        <MenuIcon
-                            icon="ticket-outline"
-                            text="Vé của tôi"
-                            onPress={() => go("MyTickets")}
-                        />
-                    </View>
+                        <Text
+                            style={
+                                styles.userName
+                            }
+                        >
+                            {fullName ||
+                                "Người dùng"}
+                        </Text>
+
+                        <View
+                            style={
+                                styles.memberBadge
+                            }
+                        >
+                            <Ionicons
+                                name="star"
+                                size={16}
+                                color="#B57B00"
+                            />
+
+                            <Text
+                                style={
+                                    styles.memberText
+                                }
+                            >
+                                {role ===
+                                    "Admin"
+                                    ? "Quản trị viên"
+                                    : "Thẻ thành viên"}
+                            </Text>
+                        </View>
+
+                        {/* Card phim */}
+
+                        <TouchableOpacity
+                            style={
+                                styles.movieCard
+                            }
+                            onPress={() =>
+                                go(
+                                    "MovieList"
+                                )
+                            }
+                        >
+                            <Text
+                                style={
+                                    styles.cardEmoji
+                                }
+                            >
+                                🎬
+                            </Text>
+
+                            <View
+                                style={{
+                                    flex: 1,
+                                }}
+                            >
+                                <Text
+                                    style={
+                                        styles.cardTitle
+                                    }
+                                >
+                                    Đặt vé theo
+                                    Phim
+                                </Text>
+
+                                <Text
+                                    style={
+                                        styles.cardSub
+                                    }
+                                >
+                                    Chọn phim yêu
+                                    thích
+                                </Text>
+                            </View>
+
+                            <Ionicons
+                                name="chevron-forward"
+                                size={24}
+                                color="#5A351B"
+                            />
+                        </TouchableOpacity>
+
+                        {/* Card rạp */}
+
+                        <TouchableOpacity
+                            style={
+                                styles.theaterCard
+                            }
+                            onPress={() =>
+                                go(
+                                    "Theater"
+                                )
+                            }
+                        >
+                            <Text
+                                style={
+                                    styles.cardEmoji
+                                }
+                            >
+                                🎞️
+                            </Text>
+
+                            <View
+                                style={{
+                                    flex: 1,
+                                }}
+                            >
+                                <Text
+                                    style={
+                                        styles.cardTitle
+                                    }
+                                >
+                                    Đặt vé theo
+                                    Rạp
+                                </Text>
+
+                                <Text
+                                    style={
+                                        styles.cardSub
+                                    }
+                                >
+                                    Chọn rạp gần
+                                    bạn
+                                </Text>
+                            </View>
+
+                            <Ionicons
+                                name="chevron-forward"
+                                size={24}
+                                color="#5A351B"
+                            />
+                        </TouchableOpacity>
+
+                        {/* Grid */}
+
+                        <View
+                            style={
+                                styles.grid
+                            }
+                        >
+                            <MenuIcon
+                                icon="home-outline"
+                                text="Trang chủ"
+                                onPress={() =>
+                                    go(
+                                        "UserHome"
+                                    )
+                                }
+                            />
+
+                            <MenuIcon
+                                icon="person-outline"
+                                text="Thành viên"
+                                onPress={() =>
+                                    go(
+                                        "Profile"
+                                    )
+                                }
+                            />
+
+                            <MenuIcon
+                                icon="location-outline"
+                                text="Rạp"
+                                onPress={() =>
+                                    go(
+                                        "Theater"
+                                    )
+                                }
+                            />
+
+                            <MenuIcon
+                                icon="gift-outline"
+                                text="Ưu đãi"
+                                onPress={() =>
+                                    go(
+                                        "Promotion"
+                                    )
+                                }
+                            />
+
+                            <MenuIcon
+                                icon="ticket-outline"
+                                text="Vé của tôi"
+                                onPress={() =>
+                                    go(
+                                        "MyTickets"
+                                    )
+                                }
+                            />
+                        </View>
+
+                        {/* Banner */}
+
+                        <View
+                            style={
+                                styles.banner
+                            }
+                        >
+                            <View>
+                                <Text
+                                    style={
+                                        styles.bannerSmall
+                                    }
+                                >
+                                    Ưu đãi cực
+                                    hot
+                                </Text>
+
+                                <Text
+                                    style={
+                                        styles.bannerBig
+                                    }
+                                >
+                                    CHO BẠN
+                                </Text>
+                            </View>
+
+                            <Text
+                                style={{
+                                    fontSize: 70,
+                                }}
+                            >
+                                🍿
+                            </Text>
+                        </View>
+                    </ScrollView>
                 </View>
             </View>
         </Modal>
     );
 }
 
-function MenuIcon({ icon, text, onPress }: MenuIconProps) {
+function MenuIcon({
+    icon,
+    text,
+    onPress,
+}: MenuIconProps) {
     return (
-        <TouchableOpacity style={styles.menuIconBox} onPress={onPress}>
-            <Ionicons name={icon} size={42} color="#FFFFFF" />
-            <Text style={styles.menuIconText}>{text}</Text>
+        <TouchableOpacity
+            style={styles.menuIconBox}
+            onPress={onPress}
+        >
+            <View
+                style={
+                    styles.iconCircle
+                }
+            >
+                <Ionicons
+                    name={icon}
+                    size={30}
+                    color="#D89A00"
+                />
+            </View>
+
+            <Text
+                style={
+                    styles.menuIconText
+                }
+            >
+                {text}
+            </Text>
         </TouchableOpacity>
     );
 }
@@ -120,94 +384,227 @@ function MenuIcon({ icon, text, onPress }: MenuIconProps) {
 const styles = StyleSheet.create({
     modalWrap: {
         flex: 1,
-        backgroundColor: "rgba(0,0,0,0.88)",
         flexDirection: "row",
+        backgroundColor:
+            "rgba(0,0,0,0.3)",
     },
 
     leftBlank: {
-        width: 70,
-        height: "100%",
+        width: 40,
     },
 
     sideMenu: {
         flex: 1,
-        backgroundColor: "#111111",
+        backgroundColor: "#FFFDF7",
+        paddingHorizontal: 20,
         paddingTop: 55,
-        paddingHorizontal: 22,
     },
 
-    menuClose: {
+    closeBtn: {
         position: "absolute",
-        top: 45,
-        right: 24,
-        zIndex: 10,
-    },
+        top: 10,
+        right: 10,
 
-    avatar: {
-        width: 130,
-        height: 130,
-        borderRadius: 65,
-        backgroundColor: "#F4F08D",
+        width: 45,
+        height: 45,
+
+        borderRadius: 22,
+
+        backgroundColor: "#fff",
+
         justifyContent: "center",
         alignItems: "center",
-        alignSelf: "center",
-        marginTop: 20,
-        marginBottom: 18,
+
+        zIndex: 99,
     },
 
-    avatarText: {
-        fontSize: 72,
+    sun: {
+        position: "absolute",
+        top: 80,
+        right: 50,
+        fontSize: 50,
+    },
+
+    avatarWrapper: {
+        width: 150,
+        height: 150,
+
+        borderRadius: 75,
+
+        backgroundColor:
+            "#FFD34D",
+
+        justifyContent: "center",
+        alignItems: "center",
+
+        alignSelf: "center",
+
+        marginTop: 40,
+
+        borderWidth: 5,
+        borderColor: "#fff",
+    },
+
+    avatarImage: {
+        width: 140,
+        height: 140,
+        borderRadius: 70,
     },
 
     userName: {
-        fontSize: 30,
+        textAlign: "center",
+        marginTop: 18,
+
+        fontSize: 28,
         fontWeight: "900",
-        color: "#FFFFFF",
-        textAlign: "center",
+
+        color: "#4A2B12",
     },
 
-    memberRole: {
-        fontSize: 22,
-        color: "#FFF9C7",
-        textAlign: "center",
-        marginTop: 8,
-        marginBottom: 28,
-    },
+    memberBadge: {
+        alignSelf: "center",
 
-    bigLink: {
-        height: 78,
-        justifyContent: "center",
+        marginTop: 10,
+
+        flexDirection: "row",
         alignItems: "center",
-        borderTopWidth: 1,
-        borderTopColor: "#4C4C4C",
+
+        backgroundColor:
+            "#FFE7A8",
+
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+
+        borderRadius: 30,
     },
 
-    bigLinkText: {
-        fontSize: 31,
-        color: "#FFFFFF",
-        fontWeight: "500",
+    memberText: {
+        marginLeft: 6,
+        color: "#8A5B00",
+        fontWeight: "700",
+    },
+
+    movieCard: {
+        marginTop: 30,
+
+        backgroundColor:
+            "#FFF0B8",
+
+        borderRadius: 22,
+
+        flexDirection: "row",
+
+        alignItems: "center",
+
+        padding: 18,
+    },
+
+    theaterCard: {
+        marginTop: 15,
+
+        backgroundColor:
+            "#FFF8E7",
+
+        borderRadius: 22,
+
+        flexDirection: "row",
+
+        alignItems: "center",
+
+        padding: 18,
+    },
+
+    cardEmoji: {
+        fontSize: 42,
+        marginRight: 15,
+    },
+
+    cardTitle: {
+        fontSize: 22,
+        fontWeight: "800",
+        color: "#4A2B12",
+    },
+
+    cardSub: {
+        marginTop: 4,
+        color: "#666",
     },
 
     grid: {
-        borderTopWidth: 1,
-        borderTopColor: "#4C4C4C",
-        paddingTop: 28,
+        marginTop: 25,
+
+        backgroundColor: "#fff",
+
+        borderRadius: 22,
+
+        paddingVertical: 20,
+
         flexDirection: "row",
         flexWrap: "wrap",
-        justifyContent: "space-between",
+
+        justifyContent:
+            "space-around",
     },
 
     menuIconBox: {
         width: "33%",
         alignItems: "center",
-        marginBottom: 38,
+        marginVertical: 12,
+    },
+
+    iconCircle: {
+        width: 60,
+        height: 60,
+
+        borderRadius: 30,
+
+        backgroundColor:
+            "#FFF6DE",
+
+        justifyContent: "center",
+        alignItems: "center",
     },
 
     menuIconText: {
-        color: "#FFFFFF",
-        fontSize: 18,
-        fontWeight: "600",
+        marginTop: 8,
+
         textAlign: "center",
-        marginTop: 10,
+
+        color: "#4A2B12",
+
+        fontSize: 14,
+
+        fontWeight: "600",
+    },
+
+    banner: {
+        marginTop: 25,
+        marginBottom: 30,
+
+        backgroundColor:
+            "#FFE8A3",
+
+        borderRadius: 22,
+
+        padding: 20,
+
+        flexDirection: "row",
+
+        justifyContent:
+            "space-between",
+
+        alignItems: "center",
+    },
+
+    bannerSmall: {
+        fontSize: 18,
+        fontWeight: "700",
+        color: "#7A4A00",
+    },
+
+    bannerBig: {
+        fontSize: 32,
+        fontWeight: "900",
+        color: "#FF9800",
     },
 });
