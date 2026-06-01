@@ -12,6 +12,9 @@ namespace backend.Repositories.Interface
         /// <summary>Lấy 1 ghế theo Id</summary>
         Task<Seat?> GetByIdAsync(int id);
 
+        /// <summary>Cập nhật trạng thái của ghế</summary>
+        Task UpdateAsync(Seat seat);
+
         /// <summary>Thêm nhiều ghế cùng lúc (bulk insert)</summary>
         Task AddRangeAsync(IEnumerable<Seat> seats);
 

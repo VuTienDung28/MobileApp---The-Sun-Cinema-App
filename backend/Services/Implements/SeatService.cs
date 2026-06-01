@@ -231,6 +231,26 @@ namespace backend.Services.Implements
         }
 
         // =============================================
+        // TOGGLE SEAT STATUS
+        // =============================================
+        public async Task ToggleSeatStatusAsync(int roomId, int seatId)
+        {
+            var seat = await _seatRepository.GetByIdAsync(seatId)
+                ?? throw new UserFriendlyException("Không tìm thấy ghế.", "SEAT_NOT_FOUND");
+
+            if (seat.RoomId != roomId)
+            {
+                throw new UserFriendlyException("Ghế không thuộc phòng chiếu này.", "INVALID_SEAT_ROOM");
+            }
+
+            seat.Status = seat.Status == "Active" ? "Broken" : "Active";
+            await _seatRepository.UpdateAsync(seat);
+
+            // Xóa Cache
+            _cache.Remove($"RoomLayout_{roomId}");
+        }
+
+        // =============================================
         // Helper: Map Seat → SeatDto
         // =============================================
         private static SeatDto MapToSeatDto(Seat s) => new()
@@ -239,7 +259,8 @@ namespace backend.Services.Implements
             RowName = s.RowName,
             SeatNumber = s.SeatNumber,
             ColumnIndex = s.ColumnIndex,
-            Type = s.Type
+            Type = s.Type,
+            Status = s.Status
         };
     }
 }

@@ -121,7 +121,7 @@ export default function SeatSelectionScreen({ navigation, route }: any) {
     }
 // Chặn đặt quá nhiều vé 
     const toggleSeat = (seat: any) => {
-        if (bookedSeatIds.includes(seat.id)) return;
+        if (bookedSeatIds.includes(seat.id) || seat.status === 'Broken') return;
 
         const isSelecting = !selectedSeats.find(s => s.id === seat.id);
 
@@ -139,6 +139,7 @@ export default function SeatSelectionScreen({ navigation, route }: any) {
 
     const getSeatStyle = (seat: any) => {
         if (bookedSeatIds.includes(seat.id)) return styles.bookedSeat;
+        if (seat.status === 'Broken') return styles.brokenSeat;
         if (selectedSeats.find(s => s.id === seat.id)) return styles.selectedSeat;
         
         if (seat.type === 'Couple') return styles.sweetSeat;
@@ -252,8 +253,9 @@ export default function SeatSelectionScreen({ navigation, route }: any) {
                     .filter((s: any) => s.rowName === rowName)
                     .sort((a: any, b: any) => a.columnIndex - b.columnIndex);
                     
-                const baselineOccupied = [...bookedSeatIds];
-                const currentOccupied = [...bookedSeatIds, ...selectedSeats.map(s => s.id)];
+                const brokenSeatIds = layout.seats.filter((s: any) => s.status === 'Broken').map((s: any) => s.id);
+                const baselineOccupied = [...bookedSeatIds, ...brokenSeatIds];
+                const currentOccupied = [...bookedSeatIds, ...brokenSeatIds, ...selectedSeats.map(s => s.id)];
                 
                 const baselineOrphans = checkOrphans(seatsInRow, baselineOccupied);
                 const currentOrphans = checkOrphans(seatsInRow, currentOccupied);
@@ -667,6 +669,10 @@ const styles = StyleSheet.create({
 
     bookedSeat: {
         backgroundColor: "#7F8C8D",
+    },
+
+    brokenSeat: {
+        opacity: 0,
     },
 
     crossLine1: {

@@ -106,6 +106,9 @@ namespace backend.DTOs
 
         /// <summary>Standard | VIP | Couple</summary>
         public string Type { get; set; } = string.Empty;
+
+        /// <summary>Trạng thái ghế: Active | Broken</summary>
+        public string Status { get; set; } = "Active";
     }
 
     /// <summary>Layout đầy đủ của phòng chiếu — trả về kèm tổng số cột để frontend dựng grid</summary>

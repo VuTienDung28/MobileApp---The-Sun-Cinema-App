@@ -36,6 +36,7 @@ const SeatLayoutManageScreen: React.FC<Props> = ({ navigation, route }) => {
 
   const [layout, setLayout] = useState<RoomSeatLayoutDto | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
 
   // ==========================================
   // BUILDER STATES
@@ -105,6 +106,15 @@ const SeatLayoutManageScreen: React.FC<Props> = ({ navigation, route }) => {
         ]
       }
     );
+  };
+
+  const handleToggleSeatStatus = async (seatId: number) => {
+    try {
+      await seatService.toggleSeatStatus(cinemaId, roomId, seatId);
+      fetchLayout(); // Refresh immediately
+    } catch (error: any) {
+      useAlertStore.getState().showAlert('Lỗi', error.message || 'Lỗi khi cập nhật ghế', { type: 'error' });
+    }
   };
 
   // ==========================================
@@ -624,7 +634,7 @@ const SeatLayoutManageScreen: React.FC<Props> = ({ navigation, route }) => {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView style={styles.content}>
+      <ScrollView style={styles.content} keyboardShouldPersistTaps="handled">
         {!layout || layout.seats.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="grid-outline" size={60} color="#BDBDBD" />
@@ -659,13 +669,21 @@ const SeatLayoutManageScreen: React.FC<Props> = ({ navigation, route }) => {
                         } else {
                           if (seat.type === 'Couple') skipNext = true; 
                           renderedRow.push(
-                            <View key={colIdx} style={[
-                              styles.seat, 
-                              seat.type === 'VIP' ? styles.seatVIP : styles.seatStandard,
-                              seat.type === 'Couple' ? styles.seatCoupleScreen : null
-                            ]}>
+                            <TouchableOpacity 
+                              key={colIdx} 
+                              style={[
+                                styles.seat, 
+                                seat.type === 'VIP' ? styles.seatVIP : styles.seatStandard,
+                                seat.type === 'Couple' ? styles.seatCoupleScreen : null,
+                                seat.status === 'Broken' ? styles.seatBroken : null,
+                                isMaintenanceMode ? styles.maintenanceModeSeat : null
+                              ]}
+                              disabled={!isMaintenanceMode}
+                              onPress={() => handleToggleSeatStatus(seat.id)}
+                              activeOpacity={0.7}
+                            >
                               <Text style={styles.seatNumber}>{seat.seatNumber}</Text>
-                            </View>
+                            </TouchableOpacity>
                           );
                         }
                       }
@@ -681,9 +699,18 @@ const SeatLayoutManageScreen: React.FC<Props> = ({ navigation, route }) => {
               <View style={styles.legendItem}><View style={[styles.legendBox, styles.seatStandard]} /><Text style={styles.mainLegendText}>Standard</Text></View>
               <View style={styles.legendItem}><View style={[styles.legendBox, styles.seatVIP]} /><Text style={styles.mainLegendText}>VIP</Text></View>
               <View style={styles.legendItem}><View style={[styles.legendBox, styles.seatCoupleScreen, { width: 30 }]} /><Text style={styles.mainLegendText}>Couple</Text></View>
+              <View style={styles.legendItem}><View style={[styles.legendBox, styles.seatBroken]} /><Text style={styles.mainLegendText}>Bảo trì</Text></View>
             </View>
 
             <View style={styles.actionButtonsRow}>
+              <TouchableOpacity 
+                style={[styles.maintenanceBtn, isMaintenanceMode && styles.maintenanceBtnActive]} 
+                onPress={() => setIsMaintenanceMode(!isMaintenanceMode)}
+              >
+                <Ionicons name="build-outline" size={20} color="#FFF" />
+                <Text style={styles.clearBtnText}>{isMaintenanceMode ? 'Tắt bảo trì' : 'Bảo trì ghế'}</Text>
+              </TouchableOpacity>
+
               <TouchableOpacity style={styles.editBtn} onPress={startEditBuilder}>
                 <Ionicons name="create-outline" size={20} color="#FFF" />
                 <Text style={styles.clearBtnText}>Sửa sơ đồ hiện tại</Text>
@@ -737,11 +764,17 @@ const styles = StyleSheet.create({
   seatCoupleScreen: { width: 46, backgroundColor: '#9B59B6' },
   emptySeat: { width: 20, height: 20, marginHorizontal: 3 },
   seatNumber: { fontSize: 8, fontWeight: 'bold', color: '#FFF' },
-  mainLegendContainer: { flexDirection: 'row', marginTop: 30, gap: 20 },
+  mainLegendContainer: { flexDirection: 'row', marginTop: 30, gap: 16, flexWrap: 'wrap', justifyContent: 'center' },
+  legendItem: { flexDirection: 'row', alignItems: 'center' },
+  legendBox: { width: 16, height: 16, borderRadius: 4, marginRight: 6 },
   mainLegendText: { fontSize: 12, color: '#8A7851', fontWeight: '600' },
-  actionButtonsRow: { flexDirection: 'row', gap: 12, marginTop: 40 },
+  actionButtonsRow: { flexDirection: 'row', gap: 12, marginTop: 40, flexWrap: 'wrap', justifyContent: 'center' },
   editBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#4ECDC4', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12, gap: 8 },
   clearBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FF6B6B', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12, gap: 8 },
+  maintenanceBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#34495E', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12, gap: 8 },
+  maintenanceBtnActive: { backgroundColor: '#F39C12' },
+  seatBroken: { opacity: 0.5, backgroundColor: '#FF6B6B' },
+  maintenanceModeSeat: { borderWidth: 1, borderColor: '#F39C12' },
   clearBtnText: { color: '#FFF', fontWeight: '700', fontSize: 16 },
 
   // Modals Shared
