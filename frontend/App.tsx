@@ -32,8 +32,10 @@ import PaymentScreen from './src/screens/Tickets/PaymentScreen';
 // Các màn hình quản lý dành cho Admin
 import AddMovieScreen from './src/screens/AdminManageScreens/AddMovieScreen';
 import EditMovieScreen from './src/screens/AdminManageScreens/EditMovieScreen';
+import MovieManagementScreen from './src/screens/AdminManageScreens/MovieManagementScreen';
 import AddTheaterScreen from './src/screens/AdminManageScreens/AddTheaterScreen';
 import EditTheaterScreen from './src/screens/AdminManageScreens/EditTheaterScreen';
+import TheaterManagementScreen from './src/screens/AdminManageScreens/TheaterManagementScreen';
 import TheaterDetailScreen from './src/screens/AdminManageScreens/TheaterDetailScreen';
 import SeatLayoutManageScreen from './src/screens/AdminManageScreens/SeatLayoutManageScreen';
 import AddShowtimeScreen from './src/screens/AdminManageScreens/AddShowtimeScreen';
@@ -73,9 +75,11 @@ export default function App() {
                 // Nhóm màn hình dành cho Admin
                 <>
                     <Stack.Screen name="AdminHome" component={AdminHomeScreen} />
+                    <Stack.Screen name="MovieManagement" component={MovieManagementScreen} />
                     <Stack.Screen name="AddMovie" component={AddMovieScreen} />
                     <Stack.Screen name="EditMovie" component={EditMovieScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="MovieDetail" component={MovieDetailScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="TheaterManagement" component={TheaterManagementScreen} />
                     <Stack.Screen name="AddTheater" component={AddTheaterScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="EditTheater" component={EditTheaterScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="TheaterDetail" component={TheaterDetailScreen} options={{ headerShown: false }} />
