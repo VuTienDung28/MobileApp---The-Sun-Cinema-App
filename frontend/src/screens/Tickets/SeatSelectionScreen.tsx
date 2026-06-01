@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
     View,
     Text,
@@ -17,6 +17,50 @@ import * as signalR from "@microsoft/signalr";
 import AppSideMenu from "../../components/AppSideMenu";
 import showtimeService from "../../services/showtimeService";
 import useAlertStore from "../../store/useAlertStore";
+
+const SeatItem = React.memo(({ 
+    seat, 
+    isBooked, 
+    isSelected, 
+    onToggle 
+}: { 
+    seat: any, 
+    isBooked: boolean, 
+    isSelected: boolean, 
+    onToggle: (seat: any) => void 
+}) => {
+    const getSeatStyle = () => {
+        if (isBooked) return styles.bookedSeat;
+        if (seat.status === 'Broken') return styles.brokenSeat;
+        if (isSelected) return styles.selectedSeat;
+        
+        if (seat.type === 'Couple') return styles.sweetSeat;
+        if (seat.type === 'VIP') return styles.vipSeat;
+
+        return styles.normalSeat;
+    };
+
+    return (
+        <TouchableOpacity
+            style={[
+                styles.seat, 
+                getSeatStyle(),
+                seat.type === 'Couple' ? styles.seatCouple : null
+            ]}
+            onPress={() => onToggle(seat)}
+            activeOpacity={isBooked ? 1 : 0.2}
+        >
+            {isBooked && (
+                <>
+                    <View style={styles.crossLine1} />
+                    <View style={styles.crossLine2} />
+                </>
+            )}
+            <Text style={styles.seatText}>{seat.seatNumber}</Text>
+        </TouchableOpacity>
+    );
+});
+
 
 export default function SeatSelectionScreen({ navigation, route }: any) {
     const cinemaName = route.params?.cinemaName || "The Sun Cinema";
@@ -120,33 +164,22 @@ export default function SeatSelectionScreen({ navigation, route }: any) {
         return orphanCount;
     }
 // Chặn đặt quá nhiều vé 
-    const toggleSeat = (seat: any) => {
+    const toggleSeat = useCallback((seat: any) => {
         if (bookedSeatIds.includes(seat.id) || seat.status === 'Broken') return;
 
-        const isSelecting = !selectedSeats.find(s => s.id === seat.id);
+        setSelectedSeats(prev => {
+            const isSelecting = !prev.find(s => s.id === seat.id);
 
-        if (isSelecting && selectedSeats.length >= 8) {
-            showAlert("Thông báo", "Bạn chỉ được chọn tối đa 8 vé cho mỗi giao dịch.", { type: "warning" });
-            return;
-        }
+            if (isSelecting && prev.length >= 8) {
+                showAlert("Thông báo", "Bạn chỉ được chọn tối đa 8 vé cho mỗi giao dịch.", { type: "warning" });
+                return prev;
+            }
 
-        const newSelectedSeats = isSelecting 
-            ? [...selectedSeats, seat]
-            : selectedSeats.filter((s) => s.id !== seat.id);
-        
-        setSelectedSeats(newSelectedSeats);
-    };
-
-    const getSeatStyle = (seat: any) => {
-        if (bookedSeatIds.includes(seat.id)) return styles.bookedSeat;
-        if (seat.status === 'Broken') return styles.brokenSeat;
-        if (selectedSeats.find(s => s.id === seat.id)) return styles.selectedSeat;
-        
-        if (seat.type === 'Couple') return styles.sweetSeat;
-        if (seat.type === 'VIP') return styles.vipSeat;
-
-        return styles.normalSeat;
-    };
+            return isSelecting 
+                ? [...prev, seat]
+                : prev.filter((s) => s.id !== seat.id);
+        });
+    }, [bookedSeatIds, showAlert]);
 
     // Trả về số tuổi giới hạn (13, 16, 18), hoặc null nếu không hạn chế
     const getAgeLimit = (): number | null => {
@@ -237,18 +270,18 @@ export default function SeatSelectionScreen({ navigation, route }: any) {
         );
     };
 
-    const totalPrice = selectedSeats.reduce((sum, seat) => {
-        return sum + getSeatPrice(seat.type);
-    }, 0);
+    const totalPrice = useMemo(() => {
+        return selectedSeats.reduce((sum, seat) => {
+            return sum + getSeatPrice(seat.type);
+        }, 0);
+    }, [selectedSeats, basePrice]);
 // Kiểm tra vé đơn lẻ
     const handleOpenConfirm = () => {
         if (selectedSeats.length === 0) return;
 
         // Check Orphan Seat Rule across the whole layout before allowing to proceed
         if (layout && layout.seats) {
-            const rows = Array.from(new Set(layout.seats.map((s: any) => s.rowName)));
-            
-            for (const rowName of rows) {
+            for (const rowName of rowNames) {
                 const seatsInRow = layout.seats
                     .filter((s: any) => s.rowName === rowName)
                     .sort((a: any, b: any) => a.columnIndex - b.columnIndex);
@@ -293,10 +326,29 @@ export default function SeatSelectionScreen({ navigation, route }: any) {
         });
     };
 
-    const numRows = layout ? Array.from(new Set(layout.seats.map((s: any) => s.rowName))).length : 10;
-    const numCols = layout?.totalColumns || 10;
-    const contentWidth = numCols * 36 + 60;
-    const contentHeight = numRows * 38 + 150; // ScreenBox + Banner + Seats
+    const { numRows, numCols, contentWidth, contentHeight, seatMap, rowNames } = useMemo(() => {
+        const rowsCount = layout ? Array.from(new Set(layout.seats.map((s: any) => s.rowName))).length : 10;
+        const colsCount = layout?.totalColumns || 10;
+        const cWidth = colsCount * 36 + 60;
+        const cHeight = rowsCount * 38 + 150; // ScreenBox + Banner + Seats
+        
+        const map: any = {};
+        const rNames = layout ? Array.from(new Set(layout.seats.map((s: any) => s.rowName))) : [];
+        if (layout && layout.seats) {
+            layout.seats.forEach((seat: any) => {
+                map[`${seat.rowName}_${seat.columnIndex}`] = seat;
+            });
+        }
+        
+        return { 
+            numRows: rowsCount, 
+            numCols: colsCount, 
+            contentWidth: cWidth, 
+            contentHeight: cHeight,
+            seatMap: map,
+            rowNames: rNames
+        };
+    }, [layout]);
 
     return (
         <SafeAreaView style={styles.container}>
@@ -350,44 +402,34 @@ export default function SeatSelectionScreen({ navigation, route }: any) {
                             </View>
 
                             <View style={styles.seatArea}>
-                                {Array.from(new Set(layout.seats.map((s: any) => s.rowName))).map((rowName: any) => (
+                                {rowNames.map((rowName: any) => (
                                     <View key={rowName} style={styles.seatRow}>
                                         <Text style={styles.rowLabel}>{rowName}</Text>
                                         <View style={styles.rowSeats}>
                                             {(() => {
                                                 const renderedRow = [];
                                                 let skipNext = false;
-                                                for (let colIdx = 0; colIdx < layout.totalColumns; colIdx++) {
+                                                for (let colIdx = 0; colIdx < numCols; colIdx++) {
                                                     if (skipNext) {
                                                         skipNext = false;
                                                         continue;
                                                     }
-                                                    const seat = layout.seats.find((s: any) => s.rowName === rowName && s.columnIndex === colIdx + 1);
+                                                    const seat = seatMap[`${rowName}_${colIdx + 1}`];
                                                     if (!seat) {
                                                         renderedRow.push(<View key={colIdx} style={styles.emptySeat} />);
                                                     } else {
                                                         const isBooked = bookedSeatIds.includes(seat.id);
+                                                        const isSelected = !!selectedSeats.find(s => s.id === seat.id);
 
                                                         if (seat.type === 'Couple') skipNext = true;
                                                         renderedRow.push(
-                                                            <TouchableOpacity
+                                                            <SeatItem
                                                                 key={colIdx}
-                                                                style={[
-                                                                    styles.seat, 
-                                                                    getSeatStyle(seat),
-                                                                    seat.type === 'Couple' ? styles.seatCouple : null
-                                                                ]}
-                                                                onPress={() => toggleSeat(seat)}
-                                                                activeOpacity={isBooked ? 1 : 0.2}
-                                                            >
-                                                                {isBooked && (
-                                                                    <>
-                                                                        <View style={styles.crossLine1} />
-                                                                        <View style={styles.crossLine2} />
-                                                                    </>
-                                                                )}
-                                                                <Text style={styles.seatText}>{seat.seatNumber}</Text>
-                                                            </TouchableOpacity>
+                                                                seat={seat}
+                                                                isBooked={isBooked}
+                                                                isSelected={isSelected}
+                                                                onToggle={toggleSeat}
+                                                            />
                                                         );
                                                     }
                                                 }

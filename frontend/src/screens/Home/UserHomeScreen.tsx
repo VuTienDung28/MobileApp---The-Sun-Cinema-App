@@ -83,37 +83,37 @@ export default function UserHomeScreen() {
 
   return (
     <View style={styles.wrapper}>
+      {/* HEADER */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.avatar}
+          onPress={() => navigation.navigate("Profile")}
+        >
+          {avatarUrl ? (
+            <Image
+              source={{ uri: getImageUrl(avatarUrl) }}
+              style={styles.avatarImage}
+              contentFit="cover"
+            />
+          ) : (
+            <Ionicons name="person" size={24} color="#FFB800" />
+          )}
+        </TouchableOpacity>
+
+        <View style={styles.logoBox}>
+          <Text style={styles.sun}>☀️</Text>
+          <Text style={styles.logo}>THE SUN</Text>
+        </View>
+
+        <TouchableOpacity onPress={() => setShowMenu(true)}>
+          <Ionicons name="menu" size={36} color="#4A2C13" />
+        </TouchableOpacity>
+      </View>
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 140 }}
       >
-        {/* HEADER */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.avatar}
-            onPress={() => navigation.navigate("Profile")}
-          >
-            {avatarUrl ? (
-              <Image
-                source={{ uri: getImageUrl(avatarUrl) }}
-                style={styles.avatarImage}
-                contentFit="cover"
-              />
-            ) : (
-              <Ionicons name="person" size={24} color="#FFB800" />
-            )}
-          </TouchableOpacity>
-
-          <View style={styles.logoBox}>
-            <Text style={styles.sun}>☀️</Text>
-            <Text style={styles.logo}>THE SUN</Text>
-          </View>
-
-          <TouchableOpacity onPress={() => setShowMenu(true)}>
-            <Ionicons name="menu" size={36} color="#4A2C13" />
-          </TouchableOpacity>
-        </View>
-
         {/* BANNER */}
         {/* BANNER */}
         {/* BANNER */}
